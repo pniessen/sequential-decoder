@@ -1,5 +1,6 @@
 import { Facility } from './facility.js';
 import { Scope, THEMES } from './display.js';
+import { Tour } from './tour.js';
 
 const $ = id => document.getElementById(id);
 const MODE_CFG = {
@@ -110,6 +111,15 @@ $('btnFind').onclick = () => {
   tty('RESTARTED AT N = ' + r.from);
   scope.resetView(f); f.run(); sync();
 };
+const runFind = $('btnFind').onclick;
+const tour = new Tour({
+  f, scope, setMode, cmd: submit, find: runFind,
+  ensureRunning(speed) { if (f.speed !== speed || f.fast) submit('SPEED=' + speed); if (f.mode === 0) submit('MODE1'); if (!f.running) submit('RUN'); },
+  stepToBranch() { for (let i = 0; i < 6 && !f.tentative; i++) f.stepOnce(); scope.follow = true; },
+  onEnd() { try { localStorage.setItem('scd-toured', '1'); } catch (e) { /* ignore */ } $('btnTour').classList.remove('nudge'); $('btnTour').focus(); },
+});
+$('btnTour').onclick = () => { hideTip(); tour.start(); };
+try { if (!localStorage.getItem('scd-toured')) $('btnTour').classList.add('nudge'); } catch (e) { $('btnTour').classList.add('nudge'); }
 document.querySelectorAll('[data-set-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.setMode); });
 
 cmd.addEventListener('keydown', e => {
@@ -118,7 +128,7 @@ cmd.addEventListener('keydown', e => {
 document.addEventListener('keydown', e => {
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
   if (mode === 'replica') { if (!typing && e.key.length === 1) cmd.focus(); return; }
-  if (typing) return;
+  if (typing || tour.active) return;
   if (e.key === ' ') { e.preventDefault(); submit(f.running ? 'STOP' : 'RUN'); }
   if (e.key === 'g' || e.key === 'G') submit('G');
 });
@@ -238,6 +248,7 @@ document.body.appendChild(tip);
 let tipTimer = 0, tipKey = null;
 function hideTip() { clearTimeout(tipTimer); tipKey = null; tip.classList.remove('on'); }
 function showTip(key, text, x, y, below) {
+  if (tour.active) return;
   if (key === tipKey) return;
   hideTip(); tipKey = key;
   tipTimer = setTimeout(() => {
@@ -281,6 +292,7 @@ function frame(ts) {
   scope.track(f, f.speed >= 5);
   scope.draw(f, mode);
   if (mode === 'explainer') narrate();
+  tour.frame();
   if (ts - lastSlow > 200 && mode !== 'replica') { lastSlow = ts; readouts(); drawCharts(); }
   requestAnimationFrame(frame);
 }

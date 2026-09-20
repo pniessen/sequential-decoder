@@ -105,3 +105,26 @@ body[data-mode="replica"] #tip { font-family: var(--mono); font-size: 12px; bord
 [data-tip] { cursor: help; }
 button[data-tip], a[data-tip], label[data-tip], .modes button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { #tip { transition: none; } }
+
+header nav { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+#btnTour { background: var(--panel); border-color: var(--accent); color: var(--ink); }
+#btnTour.nudge { animation: nudge 2.4s ease-in-out infinite; }
+@keyframes nudge { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 35%, transparent); } }
+
+#tourShade { position: fixed; z-index: 20; border-radius: 12px; pointer-events: none; box-shadow: 0 0 0 200vmax rgba(8, 10, 14, 0.66); outline: 2px solid var(--accent); outline-offset: 0; }
+#tourShade.none { outline: none; }
+#tourLens { position: fixed; z-index: 21; border-radius: 10px; border: 2px solid var(--accent); background: var(--scope-bg); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); pointer-events: none; }
+#tourCard { position: fixed; z-index: 22; width: 350px; max-width: calc(100vw - 16px); padding: 16px 18px 14px; border-radius: 12px; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); box-shadow: 0 14px 50px rgba(0, 0, 0, 0.45); font: 14px/1.5 var(--sans); }
+#tourCard.sheet { width: calc(100vw - 16px); max-height: 46vh; overflow-y: auto; }
+#tourCard h3 { margin: 0 26px 6px 0; font: 500 18px/1.25 var(--serif); }
+body[data-mode="replica"] #tourCard { font-family: var(--mono); font-size: 12.5px; border-color: var(--tip-line); }
+body[data-mode="replica"] #tourCard h3 { font: 500 14px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+#tourCard p { margin: 0; }
+#tourCard code { font: 12.5px var(--mono); background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+#tourCard .nav { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+#tourCard .count { flex: 1; color: var(--muted); font-size: 12px; }
+#tourCard button:disabled { opacity: 0.4; cursor: default; }
+#tourCard .x { position: absolute; top: 8px; right: 8px; border: 0; background: none; font-size: 20px; line-height: 1; padding: 4px 8px; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { #btnTour.nudge { animation: none; } }

@@ -16,10 +16,13 @@
     <h1>An Experimental Facility for Sequential Decoding</h1>
     <p>A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system — the Fano decoder of Fig. A-4 and its tree display · <a href="https://ntrs.nasa.gov/api/citations/19660019223/downloads/19660019223.pdf" target="_blank" rel="noopener" data-tip="The original report: MIT Research Laboratory of Electronics TR 450 / Lincoln Laboratory TR 396, 13 September 1965. 79 pages, from the NASA Technical Reports Server. Page numbers quoted in these tips refer to it.">read the thesis (PDF)</a> · hover over anything for an explanation</p>
   </div>
-  <nav class="modes" role="tablist" aria-label="Mode">
+  <nav>
+  <button id="btnTour" data-tip="A three-minute guided tour. It spotlights each part of the page in turn, magnifies the small details on the scope, and drives the decoder so you can watch each idea in action. Arrow keys move between stops; Esc ends it.">Guided tour</button>
+  <div class="modes" role="tablist" aria-label="Mode">
     <button role="tab" data-set-mode="replica" data-tip="Replica: the facility as it was in 1965. A phosphor scope showing 16 nodes of the tree, a teletype for typed commands, numbers in octal, room for 512 branches. No buttons — type HELP. Click the words MOVE and DATA on the scope as you would touch them with the light pen.">Replica</button>
     <button role="tab" data-set-mode="workbench" data-tip="Workbench: the same decoder, display and commands, with modern conveniences — buttons and sliders, live histograms, drag to pan, scroll to zoom, hover over a branch to inspect it. Every button prints the monitor command it stands for on the teletype below.">Workbench</button>
     <button role="tab" data-set-mode="explainer" data-tip="Explainer: the Workbench plus a plain-language caption for every step, the original Fortran program lighting up as it runs, and orange colouring for branches that are off the true path — something the decoder itself cannot know.">Explainer</button>
+  </div>
   </nav>
 </header>
 

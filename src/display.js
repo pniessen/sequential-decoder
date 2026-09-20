@@ -35,8 +35,8 @@ export class Scope {
     this.words = [];
   }
   resize() {
-    const r = this.cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-    this.W = Math.max(200, r.width); this.H = Math.max(200, r.height);
+    const dpr = window.devicePixelRatio || 1;      // content box: the Replica bezel is a CSS border
+    this.W = Math.max(200, this.cv.clientWidth); this.H = Math.max(200, this.cv.clientHeight);
     this.cv.width = Math.round(this.W * dpr); this.cv.height = Math.round(this.H * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.cleared = false;
@@ -175,7 +175,7 @@ export class Scope {
     if (mode === 'replica') {
       const ws = this.moveMode ? ['RESET'] : this.dataMode ? ['ERASE'] : ['MOVE', 'DATA'];
       ws.forEach((w, i) => {
-        const x = W - 70 - i * 64, yy = H - 14;
+        const x = W - 52 - c.measureText(String(d.N)).width - i * 64, yy = H - 14;   // clear of the depth number
         c.textAlign = 'center'; c.fillStyle = T.text; c.fillText(w, x, yy);
         this.words.push({ w, x, y: yy });
       });
@@ -192,6 +192,19 @@ export class Scope {
       c.strokeStyle = T.faint; c.lineWidth = 1; c.strokeRect(tx, tyy - 11, tw, 22);
       c.fillStyle = T.text; c.textAlign = 'left'; c.fillText(tip, tx + 8, tyy);
     }
+  }
+
+  // Named parts of the picture, in canvas px, for the guided tour's spotlight and lens
+  region(name, f) {
+    const d = f.dec, W = this.W, H = this.H, L = this.layout || { ty: H - 120, gx: 110, rows: 4 };
+    const box = (x, y, w, h) => { w = Math.min(w, W); h = Math.min(h, H); x = Math.max(0, Math.min(W - w, x)); y = Math.max(0, Math.min(H - h, y)); return { x, y, w, h }; };
+    const tipX = this.X(f.tentative ? f.tentative.d + 1 : d.N);
+    if (name === 'dot') return box(this.X(d.N) - 150, this.Y(d.L) - 60, 210, 120);
+    if (name === 'threshold') return box(W - 270, this.Y(d.IT) - 34, 270, 56);
+    if (name === 'register') return box(tipX - 230, 0, 270, TOP + 4);
+    if (name === 'list') return box(2, L.ty - 30, L.gx + 66, L.rows * 15 + 40);
+    if (name === 'words') return this.moveMode ? box(W - 240, H - BOTTOM - 112, 240, BOTTOM + 112) : box(W - 240, H - BOTTOM - 6, 240, BOTTOM + 6);
+    return { x: 0, y: 0, w: W, h: H };
   }
 
   // What is under the pointer, in words - for the self-explanatory tooltips
@@ -240,7 +253,7 @@ export class Scope {
 
   // Light pen (Replica) or mouse (Workbench / Explainer)
   attach(getF, getMode) {
-    const cv = this.cv, pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const cv = this.cv, pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left - cv.clientLeft, e.clientY - r.top - cv.clientTop]; };
     let drag = null;
     cv.addEventListener('pointerdown', e => {
       const [x, y] = pos(e), f = getF(), replica = getMode() === 'replica';
