@@ -22,6 +22,9 @@ Page numbers cited in this README and in the source comments are the report's ow
   **Find a search**: run fast with the display off until a search occurs, restart just before it
   from saved restart data, and replay it slowly (the procedure recommended on p. 24).
 
+Hover over (or keyboard-focus) any control, readout, chart, legend entry, or region of the scope —
+threshold lines, register bits, ordered list, GEN table — for an explanation of what it is and why it matters.
+
 ## Monitor commands (Table A-2)
 
 `RUN` `STOP` `G` `STEPS=n` `SPEED=0..7` `GO TO N=n` `MODE0` `MODE1` `OTHERS=1|0`

@@ -6,14 +6,17 @@
 body[data-mode="explainer"] {
   --bg: #f6f3ea; --panel: #fdfcf8; --ink: #2b2925; --muted: #7d776a; --line: #e2dccd;
   --accent: #1d4ed8; --accent-ink: #fff; --scope-bg: #fdfcf8; --lit: #fff3bf; --now: #ffd43b;
+  --tip-bg: #2b2925; --tip-ink: #fbf8ef; --tip-line: #2b2925;
   --sw-bright: #1d4ed8; --sw-dim: #a9b4c6; --sw-wrong: #e8590c; --sw-thr: #2b8a3e;
 }
 body[data-mode="workbench"] {
   --bg: #090c10; --panel: #0d1117; --ink: #c9d1d9; --muted: #7d8794; --line: #21262d;
+  --tip-bg: #1c2330; --tip-ink: #e6edf3; --tip-line: #3d4a5c;
   --accent: #ffd166; --accent-ink: #1a1400; --scope-bg: #0d1117; --lit: #2a2410; --now: #ffd166;
 }
 body[data-mode="replica"] {
   --bg: #000; --panel: #020805; --ink: #8dffb4; --muted: #3f9c62; --line: #0f3a20;
+  --tip-bg: #02140a; --tip-ink: #a8ffc8; --tip-line: #2b7a4a;
   --accent: #8dffb4; --accent-ink: #00170a; --scope-bg: #020805; --lit: #0b2a16; --now: #8dffb4;
 }
 * { box-sizing: border-box; }
@@ -26,6 +29,8 @@ h1 { margin: 0; font: 500 21px/1.2 var(--serif); letter-spacing: -0.01em; }
 body[data-mode="replica"] h1 { font: 500 15px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
 .title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; max-width: 70ch; }
 body[data-mode="replica"] .title p { display: none; }
+.title a { color: var(--accent); }
+body[data-mode="workbench"] .title a { color: #8fb8e8; }
 .modes { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
 .modes button { border: 0; border-radius: 0; background: none; padding: 7px 14px; color: var(--muted); }
 .modes button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
@@ -91,3 +96,12 @@ body[data-mode="replica"] #cmd::placeholder { color: #8a826c; }
   #scope { height: 56vh; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+
+#tip { position: fixed; z-index: 10; left: 0; top: 0; max-width: min(340px, calc(100vw - 24px)); padding: 9px 12px; border-radius: 8px;
+  background: var(--tip-bg); color: var(--tip-ink); border: 1px solid var(--tip-line); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  font: 12.5px/1.45 var(--sans); pointer-events: none; opacity: 0; transition: opacity 0.12s; }
+#tip.on { opacity: 1; }
+body[data-mode="replica"] #tip { font-family: var(--mono); font-size: 12px; border-radius: 2px; }
+[data-tip] { cursor: help; }
+button[data-tip], a[data-tip], label[data-tip], .modes button { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { #tip { transition: none; } }

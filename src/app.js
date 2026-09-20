@@ -178,13 +178,26 @@ function narrate() {
 }
 
 // ---- readouts and histograms ----------------------------------------------------------------
+const READOUTS = [
+  ['Node depth N', () => f.dec.N, 'How far into the tree the decoder is standing: the number of information bits on its current path.'],
+  ['Total metric L', () => f.dec.L, 'The running score of the current path — the sum of its branch metrics. About +10 per node on average along the right path at this noise level; sharply negative along a wrong one.'],
+  ['Threshold IT', () => f.dec.IT, 'The running threshold. Always a multiple of IT0, and never more than IT0 below the score at the last new node reached.'],
+  ['FLAG', () => f.dec.FLAG, 'The one bit of memory that keeps the Fano algorithm from looping. Set to 1 when a branch fails; while it is set the threshold may not be raised, because the decoder is re-tracing ground it has already covered. Cleared at the first genuinely new node.'],
+  ['Computations / node', () => (f.dec.ICOUNT / Math.max(1, f.maxN)).toFixed(2), 'Branches examined per bit decoded (his ICOUNT). The attraction of sequential decoding: this average stays small and does not grow with the constraint length, as long as the rate is below R-comp. The catch is that it is only an average.'],
+  ['Searches', () => f.stats.searches, 'How many times the decoder has failed to advance and had to search, counted as the thesis defines it: a search ends when the decoder first gets beyond the node where it began (p. 48).'],
+  ['Search depth now', () => f.stats.searchDepth, 'How many nodes the search in progress has backed up so far. The 1965 program stopped and typed SEARCH DEPTH IS n at 25; so does this one (DDT ISDM=0 turns that off).'],
+  ['Waiting line', () => f.stats.waitingLine, 'Received bauds waiting to be decoded, if the decoder runs 20 times faster than data arrives. It grows during long searches and drains afterwards.'],
+  ['Bit errors', () => f.errors, 'Decoded bits that differ from the message sent, judged 200 nodes behind the front. With a constraint length of 60 this should stay at zero: the decoder eventually detects and repairs every wrong turn.'],
+  ['Branches stored', () => f.store.count, 'Branches remembered for the display. The 1965 display had room for 512 (about ten screen widths), discarding the oldest first; Replica mode keeps that limit.'],
+];
+const readoutCells = READOUTS.map(([label, , tip]) => {
+  const div = document.createElement('div'), b = document.createElement('b');
+  div.dataset.tip = tip; div.append(label, b);
+  $('readouts').appendChild(div);
+  return b;
+});
 function readouts() {
-  const d = f.dec, st = f.stats;
-  const rows = [['Node depth N', d.N], ['Total metric L', d.L], ['Threshold IT', d.IT], ['FLAG', d.FLAG],
-    ['Computations / node', (d.ICOUNT / Math.max(1, f.maxN)).toFixed(2)], ['Searches', st.searches],
-    ['Search depth now', st.searchDepth], ['Waiting line', st.waitingLine],
-    ['Bit errors', f.errors], ['Branches stored', f.store.count]];
-  $('readouts').innerHTML = rows.map(([k, v]) => `<div>${k}<b>${v.toLocaleString ? v.toLocaleString() : v}</b></div>`).join('');
+  READOUTS.forEach(([, get], i) => { const v = get(); readoutCells[i].textContent = typeof v === 'number' ? v.toLocaleString() : v; });
 }
 
 function plot(cv, pts, { logx, xmax, xlabel }) {
@@ -217,6 +230,47 @@ function drawCharts() {
   for (let i = 0; i <= xmax; i++) if (f.stats.waitHist[i]) w.push([i, f.stats.waitHist[i]]);
   plot($('chWait'), w, { logx: false, xmax, xlabel: 'bauds waiting' });
 }
+
+// ---- tooltips: every control, readout and region of the scope explains itself --------------
+const tip = document.createElement('div');
+tip.id = 'tip'; tip.setAttribute('role', 'tooltip');
+document.body.appendChild(tip);
+let tipTimer = 0, tipKey = null;
+function hideTip() { clearTimeout(tipTimer); tipKey = null; tip.classList.remove('on'); }
+function showTip(key, text, x, y, below) {
+  if (key === tipKey) return;
+  hideTip(); tipKey = key;
+  tipTimer = setTimeout(() => {
+    tip.textContent = text;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let ty = below ? y + 10 : y - h - 14;
+    if (ty + h > innerHeight - 8) ty = y - h - 14;
+    if (ty < 8) ty = Math.min(innerHeight - h - 8, y + 18);
+    tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, x)) + 'px';
+    tip.style.top = Math.max(8, ty) + 'px';
+    tip.classList.add('on');
+  }, 380);
+}
+function tipFor(el) {
+  const r = el.getBoundingClientRect();
+  showTip(el, el.dataset.tip, r.left, r.bottom, true);
+}
+document.addEventListener('pointerover', e => {
+  const el = e.target.closest && e.target.closest('[data-tip]');
+  if (el) tipFor(el); else if (e.target !== scope.cv) hideTip();
+});
+document.addEventListener('focusin', e => { const el = e.target.closest('[data-tip]'); if (el && e.target.matches(':focus-visible')) tipFor(el); });
+document.addEventListener('focusout', hideTip);
+document.addEventListener('pointerdown', hideTip);
+document.addEventListener('scroll', hideTip, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); });
+scope.cv.addEventListener('pointermove', e => {
+  if (e.buttons || scope.hover) { hideTip(); return; }       // dragging, or the branch inspector is showing
+  const r = scope.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const text = scope.regionTip(f, mode, x, y);
+  showTip('scope:' + text, text, e.clientX + 14, e.clientY, false);
+});
+scope.cv.addEventListener('pointerleave', hideTip);
 
 // ---- clock ----------------------------------------------------------------------------------
 let last = performance.now(), lastSlow = 0, wasRunning = false;

@@ -14,72 +14,72 @@
 <header>
   <div class="title">
     <h1>An Experimental Facility for Sequential Decoding</h1>
-    <p>A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system — the Fano decoder of Fig. A-4 and its tree display</p>
+    <p>A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system — the Fano decoder of Fig. A-4 and its tree display · <a href="https://ntrs.nasa.gov/api/citations/19660019223/downloads/19660019223.pdf" target="_blank" rel="noopener" data-tip="The original report: MIT Research Laboratory of Electronics TR 450 / Lincoln Laboratory TR 396, 13 September 1965. 79 pages, from the NASA Technical Reports Server. Page numbers quoted in these tips refer to it.">read the thesis (PDF)</a> · hover over anything for an explanation</p>
   </div>
   <nav class="modes" role="tablist" aria-label="Mode">
-    <button role="tab" data-set-mode="replica" title="The PDP-6 scope and teletype, as in 1965">Replica</button>
-    <button role="tab" data-set-mode="workbench" title="The same facility with modern controls">Workbench</button>
-    <button role="tab" data-set-mode="explainer" title="Narrated, for newcomers">Explainer</button>
+    <button role="tab" data-set-mode="replica" data-tip="Replica: the facility as it was in 1965. A phosphor scope showing 16 nodes of the tree, a teletype for typed commands, numbers in octal, room for 512 branches. No buttons — type HELP. Click the words MOVE and DATA on the scope as you would touch them with the light pen.">Replica</button>
+    <button role="tab" data-set-mode="workbench" data-tip="Workbench: the same decoder, display and commands, with modern conveniences — buttons and sliders, live histograms, drag to pan, scroll to zoom, hover over a branch to inspect it. Every button prints the monitor command it stands for on the teletype below.">Workbench</button>
+    <button role="tab" data-set-mode="explainer" data-tip="Explainer: the Workbench plus a plain-language caption for every step, the original Fortran program lighting up as it runs, and orange colouring for branches that are off the true path — something the decoder itself cannot know.">Explainer</button>
   </nav>
 </header>
 
 <main>
   <section class="scopewrap">
-    <canvas id="scope" aria-label="Tree display: metric versus depth"></canvas>
+    <canvas id="scope" aria-label="Tree display: metric versus depth. Left to right is depth in the tree, one transmitted bit per step; height is the running score of how well the path fits the received signal."></canvas>
     <div class="legend only-explainer">
-      <span><i class="sw bright"></i>path being searched</span>
-      <span><i class="sw dim"></i>branches already searched</span>
-      <span><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
-      <span><i class="sw thr"></i>running threshold</span>
+      <span data-tip="The decoder’s current best guess at the transmitted message, from the start of the tree to the node it is standing on (the dot). The 1965 display drew this path brighter than everything else."><i class="sw bright"></i>path being searched</span>
+      <span data-tip="Branches the decoder tried earlier and abandoned, or backed out of. They stay on the display so you can see the shape of a search — short stubs hanging down are second-best guesses that failed immediately."><i class="sw dim"></i>branches already searched</span>
+      <span data-tip="Branches that do not match the message actually sent. We know this only because the simulation knows the message; the decoder has nothing but the noisy signal, and finds out the hard way — a wrong path’s score soon starts falling about three times faster than a right one climbs."><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
+      <span data-tip="The bar the running score must stay above. It ratchets up in steps of IT0 as the decoder makes progress on new ground, and is lowered one step when every available path falls below it. This one line is what makes the Fano algorithm work with almost no memory."><i class="sw thr"></i>running threshold</span>
     </div>
-    <div id="caption" class="only-explainer" aria-live="polite"></div>
+    <div id="caption" class="only-explainer" aria-live="polite" data-tip="A plain-language account of the step the decoder just took. The last line tells you the truth about whether it is on the right path — information the decoder does not have."></div>
   </section>
 
   <aside id="side">
     <div class="panel controls">
       <div class="row">
-        <button id="btnRun" class="primary">Run</button>
-        <button id="btnStep" title="G — one step">Step</button>
-        <button id="btnFind" title="Run fast with the display off until a search occurs, restart just before it, replay slowly (p. 24)">Find a search</button>
+        <button id="btnRun" class="primary" data-tip="RUN / STOP. Lets the algorithm advance at the chosen speed, pausing at each display checkpoint so the eye can follow. Shortcut: space bar.">Run</button>
+        <button id="btnStep" data-tip="Monitor command G: take exactly one step — try one branch, move forward one node, back up one node, or lower the threshold — then stop. Shortcut: the G key.">Step</button>
+        <button id="btnFind" data-tip="Most of the time the decoder just walks forward; the interesting moments are rare. This does what the thesis recommends (p. 24): run fast with the display off until the decoder has to back up at least three nodes, rewind to just before the trouble using saved restart data, and replay it slowly.">Find a search</button>
       </div>
-      <label>Speed <output id="outSpeed"></output><input id="rngSpeed" type="range" min="0" max="7" step="1"></label>
+      <label data-tip="Monitor command SPEED=0…7. Speed n takes 2^(1−n) seconds per step, from 2 s down to 1⁄32 s. Speed 7 turns the picture off and runs flat out while still remembering the tree, so the history is there when you slow down again.">Speed <output id="outSpeed"></output><input id="rngSpeed" type="range" min="0" max="7" step="1"></label>
       <div class="row checks">
-        <label><input id="chkDisplay" type="checkbox" checked> Display on</label>
-        <label><input id="chkOthers" type="checkbox"> Show both hypotheses</label>
+        <label data-tip="MODE1 / MODE0. With the display program off the decoder runs at full speed — tens of thousands of nodes a second — and the tree is not recorded. Use it to pile up statistics, then switch back on to look around."><input id="chkDisplay" type="checkbox" checked> Display on</label>
+        <label data-tip="Monitor command OTHERS=1. At each node draw both possible branches — information bit 0 and bit 1 — labelled with their channel signal numbers, not just the one the decoder chose to try."><input id="chkOthers" type="checkbox"> Show both hypotheses</label>
       </div>
       <div class="row">
-        <button id="btnRepeat" title="REPEAT — restart from the last saved restart data">Rewind</button>
-        <button id="btnReset">Reset</button>
-        <button id="btnExit" title="EXIT — print the statistics on the teletype">Print stats</button>
+        <button id="btnRepeat" data-tip="Monitor command REPEAT. The decoder’s complete state is saved every 100 nodes (about ten restart points are kept, as in 1965). This jumps back to the most recent one so you can watch the same stretch again. RESTART AT N=n on the teletype picks a specific point.">Rewind</button>
+        <button id="btnReset" data-tip="Start again from the origin of the tree with the same data tape, clearing the display and all statistics.">Reset</button>
+        <button id="btnExit" data-tip="Monitor command EXIT. Stops the algorithm and prints the collected statistics on the teletype, including the table behind the thesis’ Fig. 6: how many searches reached each depth.">Print stats</button>
       </div>
     </div>
 
     <div class="panel params">
-      <label>Signal-to-noise √(2E/N₀) <output id="outSnr"></output><input id="rngSnr" type="range" min="1.6" max="4" step="0.1"></label>
-      <label>Threshold increment IT0 <output id="outIt0"></output><input id="rngIt0" type="range" min="10" max="200" step="5"></label>
+      <label data-tip="How far the transmitted signal stands above the noise at the receiver. The thesis used 2.5, which puts the data rate at about 80% of R-comp, the practical limit for sequential decoding. Lower it and searches become frequent and deep; raise it and the decoder almost never backs up. Changing it makes a new data tape and recomputes the metric table from the formula on p. 29.">Signal-to-noise √(2E/N₀) <output id="outSnr"></output><input id="rngSnr" type="range" min="1.6" max="4" step="0.1"></label>
+      <label data-tip="The spacing of the threshold lines, and the one tuning knob of the Fano algorithm. Too small and every dip in the score sets off a shallow search; too large and the decoder wanders far down a wrong path before noticing. The thesis found 50 best (Fig. 6) — try 20 and 100 and compare the charts below.">Threshold increment IT0 <output id="outIt0"></output><input id="rngIt0" type="range" min="10" max="200" step="5"></label>
       <div class="row">
-        <label class="grow">Message <select id="selMsg"><option value="ZERO">all zeros (as in 1965)</option><option value="RANDOM">random bits</option></select></label>
-        <label>Data tape <input id="numSeed" type="number" min="1" max="99999" value="1965"></label>
+        <label class="grow" data-tip="What was transmitted. The thesis sent all zeros, which is a fair test because this channel treats every signal alike (p. 13). Random bits exercise the transmitter’s coder too; the statistics come out the same.">Message <select id="selMsg"><option value="ZERO">all zeros (as in 1965)</option><option value="RANDOM">random bits</option></select></label>
+        <label data-tip="Which stretch of noise to play. The 1965 facility replayed tape recordings of real receiver outputs; here each number generates a different, exactly repeatable noise sequence, so every experiment can be re-run.">Data tape <input id="numSeed" type="number" min="1" max="99999" value="1965"></label>
       </div>
     </div>
 
     <div class="panel readouts" id="readouts"></div>
 
     <div class="panel charts">
-      <figure><canvas id="chTail" width="300" height="170"></canvas><figcaption>Searches of depth ≥ N vs N <em>(Fig. 6)</em></figcaption></figure>
-      <figure><canvas id="chWait" width="300" height="120"></canvas><figcaption>Waiting line, decoder 20× channel speed</figcaption></figure>
+      <figure data-tip="A re-creation of the thesis’ Fig. 6. For each depth N, how many searches had to back up at least N nodes; both axes are logarithmic. The nearly straight tail means deep searches thin out as a power law, not exponentially — the fact that governs how big a real decoder’s buffer must be. Run 35,000 nodes with the display off to match the original."><canvas id="chTail" width="300" height="170"></canvas><figcaption>Searches of depth ≥ N vs N <em>(Fig. 6)</em></figcaption></figure>
+      <figure data-tip="Received bauds queued up while the decoder is busy searching, assuming it works 20 times faster than data arrives (COMPUTE WAITING LINE 20). In a real receiver this queue lives in a finite buffer, and overflowing it means losing communication — the practical worry behind the whole thesis."><canvas id="chWait" width="300" height="120"></canvas><figcaption>Waiting line, decoder 20× channel speed</figcaption></figure>
     </div>
 
     <div class="panel listing only-explainer">
-      <h2>The 1965 program <span>Fig. A-4 — statements just executed are lit</span></h2>
+      <h2 data-tip="The decoding algorithm exactly as listed in Fig. A-4 of the thesis (pp. 55–57), in his extended Fortran. The statements executed during the most recent step are highlighted; the bar marks where the program is now. The JavaScript running this page is a statement-for-statement port with the same labels.">The 1965 program <span>Fig. A-4 — statements just executed are lit</span></h2>
       <div id="listing"></div>
     </div>
   </aside>
 </main>
 
 <footer class="tty">
-  <pre id="log" aria-live="polite"></pre>
-  <div class="prompt"><span>*</span><input id="cmd" autocomplete="off" spellcheck="false" aria-label="Monitor command" placeholder="monitor command — try HELP"></div>
+  <pre id="log" aria-live="polite" data-tip="The teletype: everything the monitor system types out, and every command given to it. Buttons and sliders above print the command they stand for, so this doubles as a lesson in the 1965 command language."></pre>
+  <div class="prompt" data-tip="Type a monitor command and press Return — for example RUN, STOP, G, STEPS=20, SPEED=5, GO TO N=5000, MODE0, OTHERS=1, RESTART AT N=300, EXIT. HELP lists them all."><span>*</span><input id="cmd" autocomplete="off" spellcheck="false" aria-label="Monitor command" placeholder="monitor command — try HELP"></div>
 </footer>
 
 <script>

@@ -160,8 +160,10 @@ export class Scope {
       c.fillStyle = onBranch ? T.bright : T.text;
       c.fillText(num(r.code[i]).padStart(4) + '  ' + num(s), 12, ty + i * 15);
     });
+    const gx = Math.max(96, c.measureText(head).width + 30);
+    this.layout = { ty, gx, rows: r.num.length, at };
     if (at === d.N) {
-      const g = d.coder.gen, gx = Math.max(96, c.measureText(head).width + 30);
+      const g = d.coder.gen;
       c.fillStyle = T.faint; c.fillText('GEN', gx, ty - 16);
       c.fillStyle = T.text;
       if (t) { c.fillText('0  ' + num(g[0]), gx, ty); c.fillText('1  ' + num(g[1]), gx, ty + 15); }
@@ -190,6 +192,35 @@ export class Scope {
       c.strokeStyle = T.faint; c.lineWidth = 1; c.strokeRect(tx, tyy - 11, tw, 22);
       c.fillStyle = T.text; c.textAlign = 'left'; c.fillText(tip, tx + 8, tyy);
     }
+  }
+
+  // What is under the pointer, in words - for the self-explanatory tooltips
+  regionTip(f, mode, px, py) {
+    const d = f.dec, W = this.W, H = this.H, L = this.layout, oct = mode === 'replica';
+    if (f.fast && f.running) return 'The display program is switched off so the algorithm can run at full speed. The number at the lower right is the node depth reached. STOP, or a slower SPEED, brings the picture back.';
+    if (oct && this.wordAt(px, py)) {
+      return { MOVE: 'Light-pen word. Touch MOVE and an eight-pointed star appears; hold the pen on one of its tips and the whole tree drifts that way, so you can look back at branches that have slid off the screen (p. 22).',
+        RESET: 'Put the display back where it was, following the decoder, and remove the star.',
+        DATA: 'Light-pen word. Touch DATA and a row of dots appears across the top, one per node; touch a dot to see the ordered list the receiver produced for that node (p. 63).',
+        ERASE: 'Remove the dots and go back to showing the ordered list for the current node.' }[this.wordAt(px, py)];
+    }
+    if (this.moveMode && this.starTip(px, py)) return 'Hold the pointer on a tip of the star: the tree drifts in that direction for as long as you hold. RESET returns to the decoder’s position.';
+    if (py < 23) return 'The contents of the coder’s shift register: the information bit the decoder has guessed for each branch of the current path, written above that branch. The register really holds the last 60 of them — every new channel signal depends on all 60, which is what makes a wrong turn show up sooner or later.';
+    if (py < TOP) return (this.dataMode ? 'Touch a dot to show the ordered list for that node. ' : '') + 'The channel signal number (0–7' + (oct ? ', octal' : '') + ') the coder assigns to each branch of the current path: the information bit followed by two parity checks on the shift register (SEQUENCE 1 (S, I, P1, P2)). One of 8 orthogonal waveforms is sent per bit.';
+    if (L && px < L.gx - 8 && py > L.ty - 26 && py < L.ty + L.rows * 15) return `The receiver’s ordered list for node ${L.at}: the 4 of its 8 matched-filter outputs that were largest, most likely first. Left column is the voltage as a 10-bit converter reading${oct ? ' (octal)' : ''}, right column the signal number. The decoder never sees more than this about each received signal (Sec. II-E). A branch scores +17 if its signal is first on the list, −13, −29 or −41 if lower, and −64 if it is not on the list at all.`;
+    if (L && px >= L.gx - 8 && px < L.gx + 70 && py > L.ty - 26 && py < L.ty + 34) return 'The GEN table: the channel signal the coder would send from this node for information bit 0 and for bit 1. The decoder looks both up on the ordered list and tries the better-placed one first.';
+    if (py > H - BOTTOM) {
+      if (px < 64) return 'RUN or STOP: whether the main program is running — shown in the corner of the scope, as in 1965.';
+      if (px > W - 64) return 'The current node depth N, as a decimal number: how many branches from the start of the tree the decoder is standing.';
+      return 'Depth in the tree, marked every 10 nodes. One node = one information bit = one use of the channel.';
+    }
+    if (Math.hypot(px - this.X(d.N), py - this.Y(d.L)) < 12) return `Where the decoder is now: node ${d.N}, total metric ${d.L}. The metric is a running score of how well this path explains everything received so far — a log-likelihood, less a bias for the data rate, so that it climbs on the right path and sinks on a wrong one.`;
+    if (Math.abs(py - this.Y(d.IT)) < 7) return `The running threshold, now ${d.IT}. A branch is accepted only if the total stays at or above this line. It is raised as far as it will go whenever the decoder reaches a node it has never seen, and lowered by IT0 = ${d.IT0} when every path from here falls below it.`;
+    const k = Math.round((this.view.yc + (TOP + (H - TOP - BOTTOM) / 2 - py) * 32 / this.dx) / d.IT0) * d.IT0;
+    if (Math.abs(py - this.Y(k)) < 5) return `One of the levels the threshold may take — multiples of IT0 = ${d.IT0}. The threshold only ever sits on one of these lines.`;
+    return mode === 'replica'
+      ? 'The tree display. Left to right is depth in the tree; height is the total metric; each branch is a line whose slope is its metric increment. The path being searched is brightest. Hold the pointer on a node to intensify the path leading back from it, as the light pen did.'
+      : 'The tree display. Left to right is depth in the tree; height is the total metric; each branch is a line whose slope is its metric increment, so good guesses climb and bad ones drop steeply. Drag to pan, scroll to zoom, double-click to return to the decoder, hover over the end of a branch to inspect it.';
   }
 
   nodeAt(f, px, py) {
