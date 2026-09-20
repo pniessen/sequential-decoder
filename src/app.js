@@ -70,6 +70,7 @@ function setMode(m) {
   f.cfg.capacity = f.store.capacity = c.capacity;
   f.cfg.radix = c.radix;
   scope.view.w = c.w;
+  if (m === 'explainer') $('caption').appendChild($('math')); else $('scope').after($('math'));   // Explainer: words and arithmetic in one card
   scope.moveMode = scope.dataMode = false; scope.inspect = null; scope.hover = null;
   cmd.placeholder = m === 'replica' ? '' : 'monitor command — try HELP';
   requestAnimationFrame(() => { scope.resize(); scope.resetView(f); drawCharts(); });
@@ -171,9 +172,9 @@ function captionFor(ev) {
   return `${s}<span class="truth${off ? ' off' : ''}">${truth}</span>`;
 }
 
-let shownEvent = null;
+let shownEvent;          // undefined, so the introduction is shown before the first step
 function narrate() {
-  const ev = f.lastEvent, cap = $('caption');
+  const ev = f.lastEvent, cap = $('captionText');
   if (f.fast && f.running) { cap.innerHTML = `Running at full speed with the display off — ${f.maxN.toLocaleString()} nodes decoded. The histograms are filling in.`; shownEvent = null; return; }
   if (ev === shownEvent && !note) return;
   shownEvent = ev;

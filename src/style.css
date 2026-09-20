@@ -46,7 +46,7 @@ body[data-mode="replica"] #scope { height: min(68vh, 640px); border-radius: 28px
 .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 2px 0; font-size: 12px; color: var(--muted); }
 .sw { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
 .sw.bright { background: var(--sw-bright); } .sw.dim { background: var(--sw-dim); } .sw.wrong { background: var(--sw-wrong); } .sw.thr { background: var(--sw-thr); }
-#caption { margin-top: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; font: 16px/1.5 var(--serif); min-height: 104px; }
+#caption { margin-top: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; font: 16px/1.5 var(--serif); }
 #caption .truth { display: block; margin-top: 6px; font: 13px/1.4 var(--sans); color: var(--muted); }
 #caption .truth.off { color: var(--sw-wrong); }
 
@@ -167,3 +167,6 @@ body[data-mode="workbench"] #math .good em { color: #7ee2a0; } body[data-mode="w
 body[data-mode="replica"] #math { border-radius: 3px; max-width: 860px; }
 body[data-mode="replica"] #math .good em, body[data-mode="replica"] #math .bad em { color: #d6ffe4; text-decoration: underline; }
 @media (max-width: 620px) { #math div { grid-template-columns: 1fr; gap: 0; margin-bottom: 4px; } }
+
+#captionText { min-height: 78px; }
+#caption #math { margin: 12px 0 0; padding: 12px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; min-height: 112px; }

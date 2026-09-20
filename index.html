@@ -55,7 +55,7 @@ body[data-mode="replica"] #scope { height: min(68vh, 640px); border-radius: 28px
 .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 2px 0; font-size: 12px; color: var(--muted); }
 .sw { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
 .sw.bright { background: var(--sw-bright); } .sw.dim { background: var(--sw-dim); } .sw.wrong { background: var(--sw-wrong); } .sw.thr { background: var(--sw-thr); }
-#caption { margin-top: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; font: 16px/1.5 var(--serif); min-height: 104px; }
+#caption { margin-top: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; font: 16px/1.5 var(--serif); }
 #caption .truth { display: block; margin-top: 6px; font: 13px/1.4 var(--sans); color: var(--muted); }
 #caption .truth.off { color: var(--sw-wrong); }
 
@@ -177,6 +177,9 @@ body[data-mode="replica"] #math { border-radius: 3px; max-width: 860px; }
 body[data-mode="replica"] #math .good em, body[data-mode="replica"] #math .bad em { color: #d6ffe4; text-decoration: underline; }
 @media (max-width: 620px) { #math div { grid-template-columns: 1fr; gap: 0; margin-bottom: 4px; } }
 
+#captionText { min-height: 78px; }
+#caption #math { margin: 12px 0 0; padding: 12px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; min-height: 112px; }
+
 </style>
 </head>
 <body data-mode="explainer">
@@ -206,7 +209,7 @@ body[data-mode="replica"] #math .good em, body[data-mode="replica"] #math .bad e
       <span data-tip="Branches that do not match the message actually sent. We know this only because the simulation knows the message; the decoder has nothing but the noisy signal, and finds out the hard way — a wrong path’s score soon starts falling about twice as fast as a right one climbs."><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
       <span data-tip="The bar the running score must stay above. It ratchets up in steps of IT0 as the decoder makes progress on new ground, and is lowered one step when every available path falls below it. This one line is what makes the Fano algorithm work with almost no memory."><i class="sw thr"></i>running threshold</span>
     </div>
-    <div id="caption" class="only-explainer" aria-live="polite" data-tip="A plain-language account of the step the decoder just took. The last line tells you the truth about whether it is on the right path — information the decoder does not have."></div>
+    <div id="caption" class="only-explainer" aria-live="polite" data-tip="A plain-language account of the step the decoder just took. The last line tells you the truth about whether it is on the right path — information the decoder does not have. Beneath it, the same step as arithmetic."><div id="captionText"></div></div>
   </section>
 
   <aside id="side">
@@ -1658,6 +1661,7 @@ function setMode(m) {
   f.cfg.capacity = f.store.capacity = c.capacity;
   f.cfg.radix = c.radix;
   scope.view.w = c.w;
+  if (m === 'explainer') $('caption').appendChild($('math')); else $('scope').after($('math'));   // Explainer: words and arithmetic in one card
   scope.moveMode = scope.dataMode = false; scope.inspect = null; scope.hover = null;
   cmd.placeholder = m === 'replica' ? '' : 'monitor command — try HELP';
   requestAnimationFrame(() => { scope.resize(); scope.resetView(f); drawCharts(); });
@@ -1759,9 +1763,9 @@ function captionFor(ev) {
   return `${s}<span class="truth${off ? ' off' : ''}">${truth}</span>`;
 }
 
-let shownEvent = null;
+let shownEvent;          // undefined, so the introduction is shown before the first step
 function narrate() {
-  const ev = f.lastEvent, cap = $('caption');
+  const ev = f.lastEvent, cap = $('captionText');
   if (f.fast && f.running) { cap.innerHTML = `Running at full speed with the display off — ${f.maxN.toLocaleString()} nodes decoded. The histograms are filling in.`; shownEvent = null; return; }
   if (ev === shownEvent && !note) return;
   shownEvent = ev;

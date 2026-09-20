@@ -26,7 +26,7 @@ Page numbers cited in this README and in the source comments are the report's ow
 around one feature at a time, magnifies the small details on the scope with a live ×2 lens, and drives the decoder
 so each stop is a demonstration — including finding and replaying a wrong turn and re-creating Fig. 6. ← → to move, Esc to end.
 
-**Worksheet** (under the scope, all modes): the arithmetic behind every accept / fail decision, in the program's own
+**Worksheet** (under the scope in Replica and Workbench; inside the caption card in Explainer): the arithmetic behind every accept / fail decision, in the program's own
 variable names — signal → list position → λ = IDIST(pos) (with the p. 29 formula it comes from) → LT = L + λ → LT ≥ IT? —
 followed by what happened next (threshold raised, back up, threshold lowered). The scope's vertical axis is labelled
 (total metric L, with threshold-level values) and the label persists while running.
