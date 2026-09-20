@@ -71,6 +71,16 @@ test('restart reproduces the trajectory exactly', () => {
   assert.deepEqual(trace(), first);
 });
 
+test('B steps back; stepping forward again replays the same decisions', () => {
+  const f = new Facility({ ISDM: 0, IWLM: 0 });
+  runTo(f, 60);
+  const sig = () => [f.dec.N, f.dec.L, f.dec.IT, f.dec.FLAG, f.dec.pc, f.dec.coder.a, f.dec.coder.b, f.stats.moves, f.offPath].join();
+  const seen = [sig()];
+  for (let i = 0; i < 40; i++) { f.stepOnce(); seen.push(sig()); }
+  for (let i = 39; i >= 15; i--) { f.exec('B'); assert.equal(sig(), seen[i]); }
+  for (let i = 16; i <= 40; i++) { f.exec('G'); assert.equal(sig(), seen[i]); }
+});
+
 test('monitor commands', () => {
   const f = new Facility(), out = [];
   f.onPrint = s => out.push(s);

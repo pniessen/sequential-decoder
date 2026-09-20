@@ -14,7 +14,7 @@
 <header>
   <div class="title">
     <h1>An Experimental Facility for Sequential Decoding</h1>
-    <p>A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system — the Fano decoder of Fig. A-4 and its tree display · <a href="https://ntrs.nasa.gov/api/citations/19660019223/downloads/19660019223.pdf" target="_blank" rel="noopener" data-tip="The original report: MIT Research Laboratory of Electronics TR 450 / Lincoln Laboratory TR 396, 13 September 1965. 79 pages, from the NASA Technical Reports Server. Page numbers quoted in these tips refer to it.">read the thesis (PDF)</a> · hover over anything for an explanation</p>
+    <p><span class="sub">A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system</span><span class="extra"> — the Fano decoder of Fig. A-4 and its tree display · <a href="https://ntrs.nasa.gov/api/citations/19660019223/downloads/19660019223.pdf" target="_blank" rel="noopener" data-tip="The original report: MIT Research Laboratory of Electronics TR 450 / Lincoln Laboratory TR 396, 13 September 1965. 79 pages, from the NASA Technical Reports Server. Page numbers quoted in these tips refer to it.">read the thesis (PDF)</a> · hover over anything for an explanation</span></p>
   </div>
   <nav>
   <button id="btnTour" data-tip="A three-minute guided tour. It spotlights each part of the page in turn, magnifies the small details on the scope, and drives the decoder so you can watch each idea in action. Arrow keys move between stops; Esc ends it.">Guided tour</button>
@@ -30,9 +30,10 @@
 <main>
   <section class="scopewrap">
     <canvas id="scope" aria-label="Tree display: metric versus depth. Left to right is depth in the tree, one transmitted bit per step; height is the running score of how well the path fits the received signal."></canvas>
-    <div id="transport" data-tip="Run or stop the decoder, take one step at a time, and set how long it pauses at each step — from 8 seconds (time to read the caption and check the arithmetic) down to 1⁄32 s, then flat out with the display off. These are the monitor commands RUN, STOP, G and SPEED=n; the two slowest settings, SPEED=-1 and -2, go beyond the 1965 range. Keys: space = run/stop, G = step, − and + = slower / faster.">
+    <div id="transport" data-tip="Run or stop the decoder, step forward or take steps back one at a time (the last 300 are remembered; stepping forward again replays exactly the same decisions), and set how long it pauses at each step — from 8 seconds (time to read the caption and check the arithmetic) down to 1⁄32 s, then flat out with the display off. These are the monitor commands RUN, STOP, G and SPEED=n; the two slowest settings, SPEED=-1 and -2, go beyond the 1965 range. Keys: space = run/stop, → or G = step, ← or B = back, − and + = slower / faster. Back (command B) is an addition: the 1965 monitor could only RESTART from saved data.">
+      <button id="tbBack" aria-label="Step back">◀ Back</button>
       <button id="tbRun" class="primary">Run</button>
-      <button id="tbStep">Step</button>
+      <button id="tbStep" aria-label="Step forward">Step ▶</button>
       <span class="slow">slower</span>
       <input id="tbSpeed" type="range" min="-2" max="7" step="1" aria-label="Speed">
       <span>faster</span>

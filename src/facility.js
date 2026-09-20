@@ -7,11 +7,12 @@ import { TreeStore } from './treeStore.js';
 // The monitor system (Sec. III-C, Appendix A-V-B): runs the algorithm between display
 // checkpoints, feeds the tree display, keeps restart data, and obeys teletype commands.
 
+const HISTORY = 300;       // single steps that can be taken back (an addition: the 1965 monitor could only RESTART)
 const DECODE_LAG = 200;    // a bit this far behind the deepest node is taken as decoded
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 export const HELP = [
-  'RUN  STOP  G  STEPS=n        run / stop / one step / n steps',
+  'RUN  STOP  G  STEPS=n        run / stop / one step / n steps          B  take the last step back (up to 300)',
   'SPEED=0..6                   2^(1-n) sec per step (also -1, -2: 4 s, 8 s);  SPEED=7 fast, display off, tree remembered',
   'MODE0  MODE1                 display program off (fastest) / on',
   'GO TO N=n                    run until node depth n, then READY',
@@ -46,7 +47,8 @@ export class Facility {
     this.pathBranch = new Array(256).fill(null);
     this.running = false; this.stepsLeft = null; this.gotoN = null; this.acc = 0;
     this.maxN = 0; this.errors = 0; this.offPath = -1; this.lastOffPath = -1;
-    this.tentative = null; this.lastEvent = null;
+    this.tentative = null; this.lastEvent = null; this.lastEnter = null;
+    this.history = [];
     this.snapshots = []; this.storePending = false;
     this.haltedSearch = false; this.haltedWait = false;
     this.saveSnapshot();
@@ -73,12 +75,31 @@ export class Facility {
     this.maxN = best.maxN; this.errors = best.errors; this.offPath = best.offPath;
     this.snapshots = this.snapshots.filter(s => s.N <= best.N);   // restart destroys later restart data
     this.store.clear(); this.pathBranch.fill(null);
-    this.tentative = null; this.lastEvent = null;
+    this.tentative = null; this.lastEvent = null; this.lastEnter = null; this.history = [];
     this.haltedSearch = this.haltedWait = false;
     return best.N;
   }
 
+  // Take back the last step: restore the complete state saved just before it
+  stepBack() {
+    const h = this.history.pop();
+    this.stop();
+    if (!h) { this.print('NO EARLIER STEP SAVED'); return false; }
+    this.dec.restore(h.dec);
+    this.stats = h.stats;
+    Object.assign(this, h.misc);
+    return true;
+  }
+
   stepOnce() {
+    if (this.mode === 1 && !(this.speed === 7 && this.running)) {     // watching, not racing: remember how to get back
+      this.history.push({
+        dec: this.dec.snapshot(), stats: this.stats.clone(),
+        misc: { maxN: this.maxN, errors: this.errors, offPath: this.offPath, lastOffPath: this.lastOffPath, tentative: this.tentative,
+          lastEvent: this.lastEvent, lastEnter: this.lastEnter, haltedSearch: this.haltedSearch, haltedWait: this.haltedWait },
+      });
+      if (this.history.length > HISTORY) this.history.shift();
+    } else if (this.history.length) this.history = [];
     const d = this.dec, ch = this.channel, ev = d.step();
     this.stats.onEvent(ev);
     this.lastEvent = ev;
@@ -86,6 +107,7 @@ export class Facility {
       const k = ev.N & 255, bit = ev.J, sym = d.HYP[k];
       const correct = this.offPath < 0 && bit === ch.msgBit(ev.N);
       this.tentative = { d: ev.N, y0: ev.L, dy: ev.LT - ev.L, bit, sym, pos: ev.POS, li: d.LI[k], fail: ev.LT < ev.IT, correct };
+      this.lastEnter = { ev, t: this.tentative, gen: [d.coder.gen[0], d.coder.gen[1]] };
       if (this.mode === 1) {
         let parent = ev.N > 0 ? this.pathBranch[(ev.N - 1) & 255] : null;
         if (parent && (parent.d !== ev.N - 1 || parent.y0 + parent.dy !== ev.L)) parent = null;
@@ -184,6 +206,7 @@ export class Facility {
     if (s === 'RUN') this.run();
     else if (s === 'STOP') this.stop();
     else if (s === 'G') { this.stop(); this.stepOnce(); }
+    else if (s === 'B') this.stepBack();
     else if ((mt = s.match(/^STEPS=(\d+)$/))) { this.stepsLeft = +mt[1]; this.run(); }
     else if ((mt = s.match(/^SPEED=(-[12]|[0-7])$/))) this.speed = +mt[1];   // -1, -2: slower than 1965 allowed (4 s, 8 s)
     else if ((mt = s.match(/^GOTON=(\d+)$/))) { this.gotoN = +mt[1]; this.run(); }

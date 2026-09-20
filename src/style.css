@@ -28,7 +28,8 @@ header { display: flex; gap: 16px; align-items: end; justify-content: space-betw
 h1 { margin: 0; font: 500 21px/1.2 var(--serif); letter-spacing: -0.01em; }
 body[data-mode="replica"] h1 { font: 500 15px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
 .title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; max-width: 70ch; }
-body[data-mode="replica"] .title p { display: none; }
+body[data-mode="replica"] .title p { font: 12px var(--mono); letter-spacing: 0.04em; }
+body[data-mode="replica"] .title .extra { display: none; }
 .title a { color: var(--accent); }
 body[data-mode="workbench"] .title a { color: #8fb8e8; }
 .modes { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }

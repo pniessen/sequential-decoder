@@ -34,7 +34,7 @@ const TOUR_STEPS = api => [
   },
   {
     target: '#math', title: 'The arithmetic, step by step',
-    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Use <b>Step</b> under the display to go one decision at a time, or drag the speed slider down to 4 or 8 seconds a step.',
+    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Use <b>◀ Back</b> and <b>Step ▶</b> under the display (or the ← → keys once the tour is over) to go one decision at a time in either direction, or drag the speed slider down to 4 or 8 seconds a step.',
     enter: () => { api.cmd('STOP'); api.stepToBranch(); },
   },
   {

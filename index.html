@@ -37,7 +37,8 @@ header { display: flex; gap: 16px; align-items: end; justify-content: space-betw
 h1 { margin: 0; font: 500 21px/1.2 var(--serif); letter-spacing: -0.01em; }
 body[data-mode="replica"] h1 { font: 500 15px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
 .title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; max-width: 70ch; }
-body[data-mode="replica"] .title p { display: none; }
+body[data-mode="replica"] .title p { font: 12px var(--mono); letter-spacing: 0.04em; }
+body[data-mode="replica"] .title .extra { display: none; }
 .title a { color: var(--accent); }
 body[data-mode="workbench"] .title a { color: #8fb8e8; }
 .modes { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
@@ -193,7 +194,7 @@ body[data-mode="replica"] #transport { border-radius: 3px; max-width: 860px; }
 <header>
   <div class="title">
     <h1>An Experimental Facility for Sequential Decoding</h1>
-    <p>A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system — the Fano decoder of Fig. A-4 and its tree display · <a href="https://ntrs.nasa.gov/api/citations/19660019223/downloads/19660019223.pdf" target="_blank" rel="noopener" data-tip="The original report: MIT Research Laboratory of Electronics TR 450 / Lincoln Laboratory TR 396, 13 September 1965. 79 pages, from the NASA Technical Reports Server. Page numbers quoted in these tips refer to it.">read the thesis (PDF)</a> · hover over anything for an explanation</p>
+    <p><span class="sub">A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system</span><span class="extra"> — the Fano decoder of Fig. A-4 and its tree display · <a href="https://ntrs.nasa.gov/api/citations/19660019223/downloads/19660019223.pdf" target="_blank" rel="noopener" data-tip="The original report: MIT Research Laboratory of Electronics TR 450 / Lincoln Laboratory TR 396, 13 September 1965. 79 pages, from the NASA Technical Reports Server. Page numbers quoted in these tips refer to it.">read the thesis (PDF)</a> · hover over anything for an explanation</span></p>
   </div>
   <nav>
   <button id="btnTour" data-tip="A three-minute guided tour. It spotlights each part of the page in turn, magnifies the small details on the scope, and drives the decoder so you can watch each idea in action. Arrow keys move between stops; Esc ends it.">Guided tour</button>
@@ -209,9 +210,10 @@ body[data-mode="replica"] #transport { border-radius: 3px; max-width: 860px; }
 <main>
   <section class="scopewrap">
     <canvas id="scope" aria-label="Tree display: metric versus depth. Left to right is depth in the tree, one transmitted bit per step; height is the running score of how well the path fits the received signal."></canvas>
-    <div id="transport" data-tip="Run or stop the decoder, take one step at a time, and set how long it pauses at each step — from 8 seconds (time to read the caption and check the arithmetic) down to 1⁄32 s, then flat out with the display off. These are the monitor commands RUN, STOP, G and SPEED=n; the two slowest settings, SPEED=-1 and -2, go beyond the 1965 range. Keys: space = run/stop, G = step, − and + = slower / faster.">
+    <div id="transport" data-tip="Run or stop the decoder, step forward or take steps back one at a time (the last 300 are remembered; stepping forward again replays exactly the same decisions), and set how long it pauses at each step — from 8 seconds (time to read the caption and check the arithmetic) down to 1⁄32 s, then flat out with the display off. These are the monitor commands RUN, STOP, G and SPEED=n; the two slowest settings, SPEED=-1 and -2, go beyond the 1965 range. Keys: space = run/stop, → or G = step, ← or B = back, − and + = slower / faster. Back (command B) is an addition: the 1965 monitor could only RESTART from saved data.">
+      <button id="tbBack" aria-label="Step back">◀ Back</button>
       <button id="tbRun" class="primary">Run</button>
-      <button id="tbStep">Step</button>
+      <button id="tbStep" aria-label="Step forward">Step ▶</button>
       <span class="slow">slower</span>
       <input id="tbSpeed" type="range" min="-2" max="7" step="1" aria-label="Speed">
       <span>faster</span>
@@ -607,14 +609,14 @@ class FanoDecoder {
   // RESTART DATA ... IS (L, IT, FLAG, TABLES, LI, 256, LMBD, 256, ISR, 256, HYP, 256)
   snapshot() {
     return {
-      N: this.N, L: this.L, LT: this.LT, IT: this.IT, FLAG: this.FLAG, ICOUNT: this.ICOUNT, pc: this.pc,
-      a: this.coder.a, b: this.coder.b,
+      N: this.N, L: this.L, LT: this.LT, LB: this.LB, IT: this.IT, FLAG: this.FLAG, ICOUNT: this.ICOUNT, pc: this.pc, J: this.J, POS: this.POS,
+      g0: this.coder.gen[0], g1: this.coder.gen[1], a: this.coder.a, b: this.coder.b,
       LI: this.LI.slice(), HYP: this.HYP.slice(), LMBD: this.LMBD.slice(), ISR: this.ISR.slice(), BIT: this.BIT.slice(),
     };
   }
   restore(s) {
-    Object.assign(this, { N: s.N, L: s.L, LT: s.LT, IT: s.IT, FLAG: s.FLAG, ICOUNT: s.ICOUNT, pc: s.pc });
-    this.coder.a = s.a; this.coder.b = s.b;
+    Object.assign(this, { N: s.N, L: s.L, LT: s.LT, LB: s.LB, IT: s.IT, FLAG: s.FLAG, ICOUNT: s.ICOUNT, pc: s.pc, J: s.J, POS: s.POS });
+    this.coder.a = s.a; this.coder.b = s.b; this.coder.gen[0] = s.g0; this.coder.gen[1] = s.g1;
     this.LI.set(s.LI); this.HYP.set(s.HYP); this.LMBD.set(s.LMBD); this.ISR.set(s.ISR); this.BIT.set(s.BIT);
   }
 }
@@ -739,11 +741,12 @@ class TreeStore {
 // The monitor system (Sec. III-C, Appendix A-V-B): runs the algorithm between display
 // checkpoints, feeds the tree display, keeps restart data, and obeys teletype commands.
 
+const HISTORY = 300;       // single steps that can be taken back (an addition: the 1965 monitor could only RESTART)
 const DECODE_LAG = 200;    // a bit this far behind the deepest node is taken as decoded
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 const HELP = [
-  'RUN  STOP  G  STEPS=n        run / stop / one step / n steps',
+  'RUN  STOP  G  STEPS=n        run / stop / one step / n steps          B  take the last step back (up to 300)',
   'SPEED=0..6                   2^(1-n) sec per step (also -1, -2: 4 s, 8 s);  SPEED=7 fast, display off, tree remembered',
   'MODE0  MODE1                 display program off (fastest) / on',
   'GO TO N=n                    run until node depth n, then READY',
@@ -778,7 +781,8 @@ class Facility {
     this.pathBranch = new Array(256).fill(null);
     this.running = false; this.stepsLeft = null; this.gotoN = null; this.acc = 0;
     this.maxN = 0; this.errors = 0; this.offPath = -1; this.lastOffPath = -1;
-    this.tentative = null; this.lastEvent = null;
+    this.tentative = null; this.lastEvent = null; this.lastEnter = null;
+    this.history = [];
     this.snapshots = []; this.storePending = false;
     this.haltedSearch = false; this.haltedWait = false;
     this.saveSnapshot();
@@ -805,12 +809,31 @@ class Facility {
     this.maxN = best.maxN; this.errors = best.errors; this.offPath = best.offPath;
     this.snapshots = this.snapshots.filter(s => s.N <= best.N);   // restart destroys later restart data
     this.store.clear(); this.pathBranch.fill(null);
-    this.tentative = null; this.lastEvent = null;
+    this.tentative = null; this.lastEvent = null; this.lastEnter = null; this.history = [];
     this.haltedSearch = this.haltedWait = false;
     return best.N;
   }
 
+  // Take back the last step: restore the complete state saved just before it
+  stepBack() {
+    const h = this.history.pop();
+    this.stop();
+    if (!h) { this.print('NO EARLIER STEP SAVED'); return false; }
+    this.dec.restore(h.dec);
+    this.stats = h.stats;
+    Object.assign(this, h.misc);
+    return true;
+  }
+
   stepOnce() {
+    if (this.mode === 1 && !(this.speed === 7 && this.running)) {     // watching, not racing: remember how to get back
+      this.history.push({
+        dec: this.dec.snapshot(), stats: this.stats.clone(),
+        misc: { maxN: this.maxN, errors: this.errors, offPath: this.offPath, lastOffPath: this.lastOffPath, tentative: this.tentative,
+          lastEvent: this.lastEvent, lastEnter: this.lastEnter, haltedSearch: this.haltedSearch, haltedWait: this.haltedWait },
+      });
+      if (this.history.length > HISTORY) this.history.shift();
+    } else if (this.history.length) this.history = [];
     const d = this.dec, ch = this.channel, ev = d.step();
     this.stats.onEvent(ev);
     this.lastEvent = ev;
@@ -818,6 +841,7 @@ class Facility {
       const k = ev.N & 255, bit = ev.J, sym = d.HYP[k];
       const correct = this.offPath < 0 && bit === ch.msgBit(ev.N);
       this.tentative = { d: ev.N, y0: ev.L, dy: ev.LT - ev.L, bit, sym, pos: ev.POS, li: d.LI[k], fail: ev.LT < ev.IT, correct };
+      this.lastEnter = { ev, t: this.tentative, gen: [d.coder.gen[0], d.coder.gen[1]] };
       if (this.mode === 1) {
         let parent = ev.N > 0 ? this.pathBranch[(ev.N - 1) & 255] : null;
         if (parent && (parent.d !== ev.N - 1 || parent.y0 + parent.dy !== ev.L)) parent = null;
@@ -916,6 +940,7 @@ class Facility {
     if (s === 'RUN') this.run();
     else if (s === 'STOP') this.stop();
     else if (s === 'G') { this.stop(); this.stepOnce(); }
+    else if (s === 'B') this.stepBack();
     else if ((mt = s.match(/^STEPS=(\d+)$/))) { this.stepsLeft = +mt[1]; this.run(); }
     else if ((mt = s.match(/^SPEED=(-[12]|[0-7])$/))) this.speed = +mt[1];   // -1, -2: slower than 1965 allowed (4 s, 8 s)
     else if ((mt = s.match(/^GOTON=(\d+)$/))) { this.gotoN = +mt[1]; this.run(); }
@@ -1310,7 +1335,7 @@ const TOUR_STEPS = api => [
   },
   {
     target: '#math', title: 'The arithmetic, step by step',
-    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Use <b>Step</b> under the display to go one decision at a time, or drag the speed slider down to 4 or 8 seconds a step.',
+    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Use <b>◀ Back</b> and <b>Step ▶</b> under the display (or the ← → keys once the tour is over) to go one decision at a time in either direction, or drag the speed slider down to 4 or 8 seconds a step.',
     enter: () => { api.cmd('STOP'); api.stepToBranch(); },
   },
   {
@@ -1663,7 +1688,7 @@ function submit(text) {
   f.exec(text);
   note = null;
   if (Math.abs(f.dec.N - wasN) > scope.view.w || /^RES|^REP|^DDT/i.test(text.trim())) scope.resetView(f);
-  if (/^RUN|^G$|^STEPS|^GO/i.test(text.trim())) scope.follow = true;
+  if (/^RUN|^G$|^B$|^STEPS|^GO/i.test(text.trim())) scope.follow = true;
   sync();
 }
 
@@ -1702,6 +1727,7 @@ $('btnExit').onclick = () => submit('EXIT');
 $('rngSpeed').oninput = $('tbSpeed').oninput = e => submit('SPEED=' + e.target.value);
 $('tbRun').onclick = () => submit(f.running ? 'STOP' : 'RUN');
 $('tbStep').onclick = () => submit('G');
+$('tbBack').onclick = () => submit('B');
 $('chkDisplay').onchange = e => submit(e.target.checked ? 'MODE1' : 'MODE0');
 $('chkOthers').onchange = e => submit('OTHERS=' + (e.target.checked ? 1 : 0));
 $('rngSnr').oninput = e => { $('outSnr').textContent = (+e.target.value).toFixed(1); };
@@ -1742,7 +1768,8 @@ document.addEventListener('keydown', e => {
   if (mode === 'replica') { if (!typing && e.key.length === 1) cmd.focus(); return; }
   if (typing || tour.active || document.querySelector('dialog[open]')) return;
   if (e.key === ' ') { e.preventDefault(); submit(f.running ? 'STOP' : 'RUN'); }
-  if (e.key === 'g' || e.key === 'G') submit('G');
+  if (e.key === 'g' || e.key === 'G' || e.key === 'ArrowRight') { e.preventDefault(); submit('G'); }
+  if (e.key === 'b' || e.key === 'B' || e.key === 'ArrowLeft') { e.preventDefault(); submit('B'); }
   if ((e.key === '-' || e.key === '_') && f.speed > -2) submit('SPEED=' + (f.speed - 1));
   if ((e.key === '+' || e.key === '=') && f.speed < 7) submit('SPEED=' + (f.speed + 1));
 });
@@ -1803,24 +1830,24 @@ function narrate() {
 
 // ---- the worksheet: how accept / fail is being calculated, step by step ----------------------
 const ORD = ['', '1st', '2nd'], sgn = n => (n >= 0 ? '+ ' : '\u2212 ') + Math.abs(n), neg = n => String(n).replace('-', '\u2212');
-let mathBranch = null, mathEvent;
+let mathEvent;
 function worksheet() {
   const ev = f.lastEvent, el = $('math'), d = f.dec;
   if (f.fast && f.running) { if (mathEvent !== 'fast') { mathEvent = 'fast'; el.innerHTML = '<div><b>DISPLAY OFF</b><span>running at full speed — STOP or a slower SPEED shows the arithmetic again</span></div>'; } return; }
   if (ev === mathEvent) return;
   mathEvent = ev;
-  if (!ev) { mathBranch = null; el.innerHTML = '<div><b>WORKSHEET</b><span>the arithmetic behind each accept / fail decision appears here as the decoder runs</span></div>'; return; }
+  if (!ev) { el.innerHTML = '<div><b>WORKSHEET</b><span>the arithmetic behind each accept / fail decision appears here as the decoder runs</span></div>'; return; }
   const row = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><b>${k}</b><span>${v}</span></div>`;
-  if (ev.kind === 'enter') {
-    const t = f.tentative, g = d.coder.gen, l = f.channel.listLen, q = f.q[t.pos - 1];
+  let mathBranch = '';
+  if (f.lastEnter) {
+    const { ev: ev0, t, gen: g } = f.lastEnter, ev = ev0, l = f.channel.listLen, q = f.q[t.pos - 1];
     const formula = t.pos <= l ? `10 × [log₂(8 × ${q.toFixed(3)}) − 1]` : `10 × [log₂(8 × ${q.toFixed(3)} ÷ ${8 - l}) − 1]`;
     mathBranch = row('BRANCH', `node N = ${ev.N}: try the ${ORD[t.li]} choice, bit J = ${t.bit} → signal GEN(${t.bit}) = ${t.sym} <i>(GEN: 0 → ${g[0]}, 1 → ${g[1]})</i>`)
       + row('METRIC', `signal ${t.sym} is ${t.pos <= l ? `no. ${t.pos} on` : 'not on'} the receiver’s list → λ = IDIST(${t.pos}) = <em>${neg(t.dy)}</em> <i>≈ ${formula}, where ${q.toFixed(3)} = chance the true signal lands there</i>`)
       + row('TOTAL', `LT = L + λ = ${neg(ev.L)} ${sgn(t.dy)} = <em>${neg(ev.LT)}</em>`)
       + row('TEST', `LT ≥ IT ?  ${neg(ev.LT)} ${t.fail ? '&lt;' : '≥'} ${neg(ev.IT)} → <em>${t.fail ? 'FAIL' : 'ACCEPT'}</em>`, t.fail ? 'bad' : 'good');
-    el.innerHTML = mathBranch + row('THEN', '…');
-    return;
   }
+  if (ev.kind === 'enter') { el.innerHTML = mathBranch + row('THEN', '…'); return; }
   let then;
   if (ev.kind === 'advance') {
     const raised = ev.boxes.filter(b => b === 6).length * d.IT0;
@@ -1837,7 +1864,7 @@ function worksheet() {
     then = (ev.boxes.includes(14) ? `look back: LB = ${neg(ev.L)} ${sgn(-d.LMBD[(ev.N - 1) & 255])} = ${neg(ev.L - d.LMBD[(ev.N - 1) & 255])} &lt; IT = ${neg(old)}, so no retreat is possible` : 'at the origin: nowhere to back up to')
       + ` → lower threshold: IT ← IT − IT0 = ${neg(old)} − ${d.IT0} = <em>${neg(ev.IT)}</em>`;
   }
-  el.innerHTML = (mathBranch || '') + row('THEN', then);
+  el.innerHTML = mathBranch + row('THEN', then);
 }
 
 // ---- readouts and histograms ----------------------------------------------------------------

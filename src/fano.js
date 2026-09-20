@@ -116,14 +116,14 @@ export class FanoDecoder {
   // RESTART DATA ... IS (L, IT, FLAG, TABLES, LI, 256, LMBD, 256, ISR, 256, HYP, 256)
   snapshot() {
     return {
-      N: this.N, L: this.L, LT: this.LT, IT: this.IT, FLAG: this.FLAG, ICOUNT: this.ICOUNT, pc: this.pc,
-      a: this.coder.a, b: this.coder.b,
+      N: this.N, L: this.L, LT: this.LT, LB: this.LB, IT: this.IT, FLAG: this.FLAG, ICOUNT: this.ICOUNT, pc: this.pc, J: this.J, POS: this.POS,
+      g0: this.coder.gen[0], g1: this.coder.gen[1], a: this.coder.a, b: this.coder.b,
       LI: this.LI.slice(), HYP: this.HYP.slice(), LMBD: this.LMBD.slice(), ISR: this.ISR.slice(), BIT: this.BIT.slice(),
     };
   }
   restore(s) {
-    Object.assign(this, { N: s.N, L: s.L, LT: s.LT, IT: s.IT, FLAG: s.FLAG, ICOUNT: s.ICOUNT, pc: s.pc });
-    this.coder.a = s.a; this.coder.b = s.b;
+    Object.assign(this, { N: s.N, L: s.L, LT: s.LT, LB: s.LB, IT: s.IT, FLAG: s.FLAG, ICOUNT: s.ICOUNT, pc: s.pc, J: s.J, POS: s.POS });
+    this.coder.a = s.a; this.coder.b = s.b; this.coder.gen[0] = s.g0; this.coder.gen[1] = s.g1;
     this.LI.set(s.LI); this.HYP.set(s.HYP); this.LMBD.set(s.LMBD); this.ISR.set(s.ISR); this.BIT.set(s.BIT);
   }
 }
