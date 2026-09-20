@@ -26,6 +26,9 @@ Page numbers cited in this README and in the source comments are the report's ow
 around one feature at a time, magnifies the small details on the scope with a live ×2 lens, and drives the decoder
 so each stop is a demonstration — including finding and replaying a wrong turn and re-creating Fig. 6. ← → to move, Esc to end.
 
+**Transport bar** (under the scope, every mode): Run / Stop, Step, and a speed slider from 8 s per step to flat out.
+`SPEED=-1` and `SPEED=-2` (4 s, 8 s) extend the 1965 range for unhurried watching. Keys: space, G, − and +.
+
 **Worksheet** (under the scope in Replica and Workbench; inside the caption card in Explainer): the arithmetic behind every accept / fail decision, in the program's own
 variable names — signal → list position → λ = IDIST(pos) (with the p. 29 formula it comes from) → LT = L + λ → LT ≥ IT? —
 followed by what happened next (threshold raised, back up, threshold lowered). The scope's vertical axis is labelled
@@ -40,7 +43,7 @@ threshold lines, register bits, ordered list, GEN table — for an explanation o
 
 ## Monitor commands (Table A-2)
 
-`RUN` `STOP` `G` `STEPS=n` `SPEED=0..7` `GO TO N=n` `MODE0` `MODE1` `OTHERS=1|0`
+`RUN` `STOP` `G` `STEPS=n` `SPEED=-2..7` `GO TO N=n` `MODE0` `MODE1` `OTHERS=1|0`
 `RESTART AT N=n` `REPEAT` `STORE` `DATA AT N=n: value signal, ...` `DDT [IT0= SN= SEED= MSG= ISDM= IWLM= K=]`
 `EXIT` `RESET` `HELP`
 

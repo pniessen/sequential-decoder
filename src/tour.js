@@ -34,12 +34,12 @@ const TOUR_STEPS = api => [
   },
   {
     target: '#math', title: 'The arithmetic, step by step',
-    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Press <b>Step</b> (or the G key after the tour) to go one decision at a time.',
+    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Use <b>Step</b> under the display to go one decision at a time, or drag the speed slider down to 4 or 8 seconds a step.',
     enter: () => { api.cmd('STOP'); api.stepToBranch(); },
   },
   {
     region: 'all', title: 'A wrong turn',
-    body: 'Now the interesting part. The decoder has just run ahead with the display off, found a place where noise sent it into trouble, rewound using saved restart data, and is replaying it slowly — exactly the procedure the thesis recommends. Watch the score sink to the threshold, the decoder back up and try second-best branches (the stubs that hang down), and finally recover. <b>Orange</b> marks branches off the true path — something only we can see. Give it fifteen seconds.',
+    body: 'Now the interesting part. The decoder has just run ahead with the display off, found a place where noise sent it into trouble, rewound using saved restart data, and is replaying it slowly — exactly the procedure the thesis recommends. Watch the score sink to the threshold, the decoder back up and try second-best branches (the stubs that hang down), and finally recover. <b>Orange</b> marks branches off the true path — something only we can see. It is playing at one step a second; the <b>speed slider under the display</b> slows it to as little as one step every 8 seconds, and <b>Step</b> advances by hand.',
     enter: () => api.find(),
   },
   {

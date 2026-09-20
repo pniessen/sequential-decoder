@@ -70,7 +70,7 @@ function setMode(m) {
   f.cfg.capacity = f.store.capacity = c.capacity;
   f.cfg.radix = c.radix;
   scope.view.w = c.w;
-  if (m === 'explainer') $('caption').appendChild($('math')); else $('scope').after($('math'));   // Explainer: words and arithmetic in one card
+  if (m === 'explainer') $('caption').appendChild($('math')); else $('transport').after($('math'));   // Explainer: words and arithmetic in one card
   scope.moveMode = scope.dataMode = false; scope.inspect = null; scope.hover = null;
   cmd.placeholder = m === 'replica' ? '' : 'monitor command — try HELP';
   requestAnimationFrame(() => { scope.resize(); scope.resetView(f); drawCharts(); });
@@ -78,10 +78,11 @@ function setMode(m) {
 }
 
 // ---- side panel -----------------------------------------------------------------------------
-const SPEED_LABEL = ['2 s / step', '1 s', '½ s', '¼ s', '⅛ s', '1⁄16 s', '1⁄32 s', 'fast, display off'];
+const SPEED_LABEL = ['8 s / step', '4 s / step', '2 s / step', '1 s / step', '½ s', '¼ s', '⅛ s', '1⁄16 s', '1⁄32 s', 'fast, display off'];   // SPEED=-2 … 7
 function sync() {
   $('btnRun').textContent = f.running ? 'Stop' : 'Run';
-  $('rngSpeed').value = f.speed; $('outSpeed').textContent = SPEED_LABEL[f.speed];
+  $('rngSpeed').value = $('tbSpeed').value = f.speed; $('outSpeed').textContent = $('tbSpeedOut').textContent = SPEED_LABEL[f.speed + 2];
+  $('tbRun').textContent = f.running ? 'Stop' : 'Run';
   $('chkDisplay').checked = f.mode === 1; $('chkOthers').checked = !!f.others;
   $('rngSnr').value = f.cfg.snr; $('outSnr').textContent = f.cfg.snr.toFixed(1);
   $('rngIt0').value = f.cfg.it0; $('outIt0').textContent = f.cfg.it0;
@@ -92,7 +93,9 @@ $('btnStep').onclick = () => submit('G');
 $('btnRepeat').onclick = () => submit('REPEAT');
 $('btnReset').onclick = () => submit('RESET');
 $('btnExit').onclick = () => submit('EXIT');
-$('rngSpeed').oninput = e => submit('SPEED=' + e.target.value);
+$('rngSpeed').oninput = $('tbSpeed').oninput = e => submit('SPEED=' + e.target.value);
+$('tbRun').onclick = () => submit(f.running ? 'STOP' : 'RUN');
+$('tbStep').onclick = () => submit('G');
 $('chkDisplay').onchange = e => submit(e.target.checked ? 'MODE1' : 'MODE0');
 $('chkOthers').onchange = e => submit('OTHERS=' + (e.target.checked ? 1 : 0));
 $('rngSnr').oninput = e => { $('outSnr').textContent = (+e.target.value).toFixed(1); };
@@ -102,14 +105,14 @@ $('rngIt0').onchange = e => submit('DDT IT0=' + e.target.value);
 $('selMsg').onchange = e => submit('DDT MSG=' + e.target.value);
 $('numSeed').onchange = e => submit('DDT SEED=' + Math.max(1, Math.floor(+e.target.value || 1)));
 $('btnFind').onclick = () => {
-  tty('*(FIND A SEARCH: MODE0, RUN, RESTART BEFORE IT, SPEED=2)');
+  tty('*(FIND A SEARCH: MODE0, RUN, RESTART BEFORE IT, SPEED=1)');
   const r = f.findSearch(3);
   if (!r) { note = 'No search three nodes deep turned up in the next stretch of data — the channel is too quiet. Try a lower signal-to-noise ratio.'; sync(); return; }
-  f.speed = 2;
+  f.speed = 1;          // a second per step: time to read each caption
   note = `Found a search that begins at node ${r.n0}. ` + (r.wrongTurn >= 0
     ? `Noise made a wrong branch look better at node ${r.wrongTurn}, and the decoder took it. `
     : 'The decoder never left the right path — a burst of noise simply dragged the correct path under the threshold. ')
-    + `Rewound to node ${r.from} using saved restart data; now replaying it slowly. Watch the total sink toward the threshold line.`;
+    + `Rewound to node ${r.from} using saved restart data; now replaying it at one step a second — use the speed slider under the display to go slower or faster. Watch the total sink toward the threshold line.`;
   tty('RESTARTED AT N = ' + r.from);
   scope.resetView(f); f.run(); sync();
 };
@@ -134,6 +137,8 @@ document.addEventListener('keydown', e => {
   if (typing || tour.active || document.querySelector('dialog[open]')) return;
   if (e.key === ' ') { e.preventDefault(); submit(f.running ? 'STOP' : 'RUN'); }
   if (e.key === 'g' || e.key === 'G') submit('G');
+  if ((e.key === '-' || e.key === '_') && f.speed > -2) submit('SPEED=' + (f.speed - 1));
+  if ((e.key === '+' || e.key === '=') && f.speed < 7) submit('SPEED=' + (f.speed + 1));
 });
 
 const listing = $('listing');

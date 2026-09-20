@@ -170,3 +170,10 @@ body[data-mode="replica"] #math .good em, body[data-mode="replica"] #math .bad e
 
 #captionText { min-height: 78px; }
 #caption #math { margin: 12px 0 0; padding: 12px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; min-height: 112px; }
+
+#transport { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; font-size: 12px; color: var(--muted); cursor: default; }
+#transport input[type="range"] { flex: 1; min-width: 80px; margin: 0; }
+#transport output { min-width: 108px; text-align: right; color: var(--ink); font: 12.5px var(--mono); }
+#transport .slow { margin-left: 6px; }
+body[data-mode="replica"] #transport { border-radius: 3px; max-width: 860px; }
+@media (max-width: 520px) { #transport { flex-wrap: wrap; } #transport output { min-width: 0; flex: 1; } }

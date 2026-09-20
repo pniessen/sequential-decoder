@@ -80,6 +80,7 @@ test('monitor commands', () => {
   f.exec('STEPS=5'); while (f.running) f.pump(0);
   f.exec('DATA AT N=400: 1000 7, * *, * *, * *');
   assert.equal(f.channel.received(400).num[0], 7);
+  f.exec('SPEED=-2'); assert.equal(f.speed, -2); f.exec('SPEED=8'); assert.equal(out.at(-1), '?'); assert.equal(f.speed, -2);
   f.exec('BOGUS'); assert.equal(out.at(-1), '?');
   const r = f.findSearch(3);
   assert.ok(r && r.from <= r.n0 - 3 && f.dec.N === r.from);

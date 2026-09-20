@@ -12,7 +12,7 @@ const now = () => (typeof performance !== 'undefined' ? performance.now() : Date
 
 export const HELP = [
   'RUN  STOP  G  STEPS=n        run / stop / one step / n steps',
-  'SPEED=0..6                   2^(1-n) sec per step;  SPEED=7 fast, display off, tree remembered',
+  'SPEED=0..6                   2^(1-n) sec per step (also -1, -2: 4 s, 8 s);  SPEED=7 fast, display off, tree remembered',
   'MODE0  MODE1                 display program off (fastest) / on',
   'GO TO N=n                    run until node depth n, then READY',
   'OTHERS=1|0                   show every hypothesis at the current node',
@@ -185,7 +185,7 @@ export class Facility {
     else if (s === 'STOP') this.stop();
     else if (s === 'G') { this.stop(); this.stepOnce(); }
     else if ((mt = s.match(/^STEPS=(\d+)$/))) { this.stepsLeft = +mt[1]; this.run(); }
-    else if ((mt = s.match(/^SPEED=([0-7])$/))) this.speed = +mt[1];
+    else if ((mt = s.match(/^SPEED=(-[12]|[0-7])$/))) this.speed = +mt[1];   // -1, -2: slower than 1965 allowed (4 s, 8 s)
     else if ((mt = s.match(/^GOTON=(\d+)$/))) { this.gotoN = +mt[1]; this.run(); }
     else if (s === 'MODE0') { this.mode = 0; this.others = 0; this.store.clear(); this.pathBranch.fill(null); }
     else if (s === 'MODE1') this.mode = 1;

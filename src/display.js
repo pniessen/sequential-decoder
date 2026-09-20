@@ -48,7 +48,7 @@ export class Scope {
 
   track(f, quick) {
     const v = this.view, d = f.dec;
-    if (this.drift) { v.x0 += this.drift[0] * 0.12 * (1 + f.speed); v.yc -= this.drift[1] * 4 * (1 + f.speed); this.follow = false; }
+    if (this.drift) { const k = Math.max(1, 1 + f.speed); v.x0 += this.drift[0] * 0.12 * k; v.yc -= this.drift[1] * 4 * k; this.follow = false; }
     if (!this.follow) return;
     const tip = f.tentative ? f.tentative.d + 1 : d.N, e = quick ? 0.35 : 0.1;
     let tx = v.x0;
