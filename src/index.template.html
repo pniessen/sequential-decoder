@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sequential Decoding Facility</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body data-mode="explainer">
+<header>
+  <div class="title">
+    <h1>An Experimental Facility for Sequential Decoding</h1>
+    <p>A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system — the Fano decoder of Fig. A-4 and its tree display</p>
+  </div>
+  <nav class="modes" role="tablist" aria-label="Mode">
+    <button role="tab" data-set-mode="replica" title="The PDP-6 scope and teletype, as in 1965">Replica</button>
+    <button role="tab" data-set-mode="workbench" title="The same facility with modern controls">Workbench</button>
+    <button role="tab" data-set-mode="explainer" title="Narrated, for newcomers">Explainer</button>
+  </nav>
+</header>
+
+<main>
+  <section class="scopewrap">
+    <canvas id="scope" aria-label="Tree display: metric versus depth"></canvas>
+    <div class="legend only-explainer">
+      <span><i class="sw bright"></i>path being searched</span>
+      <span><i class="sw dim"></i>branches already searched</span>
+      <span><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
+      <span><i class="sw thr"></i>running threshold</span>
+    </div>
+    <div id="caption" class="only-explainer" aria-live="polite"></div>
+  </section>
+
+  <aside id="side">
+    <div class="panel controls">
+      <div class="row">
+        <button id="btnRun" class="primary">Run</button>
+        <button id="btnStep" title="G — one step">Step</button>
+        <button id="btnFind" title="Run fast with the display off until a search occurs, restart just before it, replay slowly (p. 24)">Find a search</button>
+      </div>
+      <label>Speed <output id="outSpeed"></output><input id="rngSpeed" type="range" min="0" max="7" step="1"></label>
+      <div class="row checks">
+        <label><input id="chkDisplay" type="checkbox" checked> Display on</label>
+        <label><input id="chkOthers" type="checkbox"> Show both hypotheses</label>
+      </div>
+      <div class="row">
+        <button id="btnRepeat" title="REPEAT — restart from the last saved restart data">Rewind</button>
+        <button id="btnReset">Reset</button>
+        <button id="btnExit" title="EXIT — print the statistics on the teletype">Print stats</button>
+      </div>
+    </div>
+
+    <div class="panel params">
+      <label>Signal-to-noise √(2E/N₀) <output id="outSnr"></output><input id="rngSnr" type="range" min="1.6" max="4" step="0.1"></label>
+      <label>Threshold increment IT0 <output id="outIt0"></output><input id="rngIt0" type="range" min="10" max="200" step="5"></label>
+      <div class="row">
+        <label class="grow">Message <select id="selMsg"><option value="ZERO">all zeros (as in 1965)</option><option value="RANDOM">random bits</option></select></label>
+        <label>Data tape <input id="numSeed" type="number" min="1" max="99999" value="1965"></label>
+      </div>
+    </div>
+
+    <div class="panel readouts" id="readouts"></div>
+
+    <div class="panel charts">
+      <figure><canvas id="chTail" width="300" height="170"></canvas><figcaption>Searches of depth ≥ N vs N <em>(Fig. 6)</em></figcaption></figure>
+      <figure><canvas id="chWait" width="300" height="120"></canvas><figcaption>Waiting line, decoder 20× channel speed</figcaption></figure>
+    </div>
+
+    <div class="panel listing only-explainer">
+      <h2>The 1965 program <span>Fig. A-4 — statements just executed are lit</span></h2>
+      <div id="listing"></div>
+    </div>
+  </aside>
+</main>
+
+<footer class="tty">
+  <pre id="log" aria-live="polite"></pre>
+  <div class="prompt"><span>*</span><input id="cmd" autocomplete="off" spellcheck="false" aria-label="Monitor command" placeholder="monitor command — try HELP"></div>
+</footer>
+
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>

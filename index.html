@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sequential Decoding Facility</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --serif: "IBM Plex Serif", Georgia, serif;
+}
+body[data-mode="explainer"] {
+  --bg: #f6f3ea; --panel: #fdfcf8; --ink: #2b2925; --muted: #7d776a; --line: #e2dccd;
+  --accent: #1d4ed8; --accent-ink: #fff; --scope-bg: #fdfcf8; --lit: #fff3bf; --now: #ffd43b;
+  --sw-bright: #1d4ed8; --sw-dim: #a9b4c6; --sw-wrong: #e8590c; --sw-thr: #2b8a3e;
+}
+body[data-mode="workbench"] {
+  --bg: #090c10; --panel: #0d1117; --ink: #c9d1d9; --muted: #7d8794; --line: #21262d;
+  --accent: #ffd166; --accent-ink: #1a1400; --scope-bg: #0d1117; --lit: #2a2410; --now: #ffd166;
+}
+body[data-mode="replica"] {
+  --bg: #000; --panel: #020805; --ink: #8dffb4; --muted: #3f9c62; --line: #0f3a20;
+  --accent: #8dffb4; --accent-ink: #00170a; --scope-bg: #020805; --lit: #0b2a16; --now: #8dffb4;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--sans); min-height: 100vh; display: flex; flex-direction: column; }
+body[data-mode="replica"] { font-family: var(--mono); }
+
+header { display: flex; gap: 16px; align-items: end; justify-content: space-between; flex-wrap: wrap; padding: 18px 20px 12px; }
+h1 { margin: 0; font: 500 21px/1.2 var(--serif); letter-spacing: -0.01em; }
+body[data-mode="replica"] h1 { font: 500 15px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+.title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; max-width: 70ch; }
+body[data-mode="replica"] .title p { display: none; }
+.modes { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.modes button { border: 0; border-radius: 0; background: none; padding: 7px 14px; color: var(--muted); }
+.modes button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 0 20px; flex: 1; align-items: start; }
+body[data-mode="replica"] main { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+body[data-mode="replica"] #side, body:not([data-mode="explainer"]) .only-explainer { display: none; }
+.scopewrap { min-width: 0; width: 100%; }
+body[data-mode="replica"] .scopewrap { max-width: 860px; }
+#scope { display: block; width: 100%; height: min(62vh, 600px); min-height: 380px; background: var(--scope-bg); border: 1px solid var(--line); border-radius: 10px; touch-action: none; cursor: crosshair; }
+body[data-mode="replica"] #scope { height: min(68vh, 640px); border-radius: 28px; border: 10px solid #15110c; box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.9), 0 0 0 1px #2a231a; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 2px 0; font-size: 12px; color: var(--muted); }
+.sw { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.sw.bright { background: var(--sw-bright); } .sw.dim { background: var(--sw-dim); } .sw.wrong { background: var(--sw-wrong); } .sw.thr { background: var(--sw-thr); }
+#caption { margin-top: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; font: 16px/1.5 var(--serif); min-height: 104px; }
+#caption .truth { display: block; margin-top: 6px; font: 13px/1.4 var(--sans); color: var(--muted); }
+#caption .truth.off { color: var(--sw-wrong); }
+
+#side { display: flex; flex-direction: column; gap: 12px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.row + .row, label + .row, .row + label, label + label { margin-top: 10px; }
+.grow { flex: 1; }
+label { display: block; font-size: 12px; color: var(--muted); }
+label output { float: right; color: var(--ink); font-family: var(--mono); }
+.checks label { display: flex; gap: 6px; align-items: center; color: var(--ink); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+select, input[type="number"] { display: block; width: 100%; margin-top: 4px; padding: 5px 6px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; font: 13px var(--sans); }
+input[type="number"] { width: 84px; font-family: var(--mono); }
+button { font: 500 13px var(--sans); padding: 7px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); min-width: 64px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.readouts b { float: right; color: var(--ink); font: 500 13px var(--mono); }
+.charts { display: grid; gap: 10px; }
+figure { margin: 0; } figure canvas { width: 100%; height: auto; display: block; }
+figcaption { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+.listing h2 { margin: 0 0 8px; font: 600 13px var(--sans); }
+.listing h2 span { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; }
+#listing { font: 11.5px/1.5 var(--mono); }
+#listing div { display: grid; grid-template-columns: 26px 1fr; padding: 1px 4px; border-radius: 4px; }
+#listing div small { grid-column: 2; font: 11px var(--sans); color: var(--muted); }
+#listing div.on { background: var(--lit); }
+#listing div.now { box-shadow: inset 3px 0 0 var(--now); }
+#listing i { color: var(--muted); font-style: normal; }
+
+.tty { margin: 16px 20px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); }
+body[data-mode="replica"] .tty { max-width: 860px; width: calc(100% - 40px); margin-inline: auto; background: #efe9d8; color: #1d1b16; border-color: #cfc7b0; border-radius: 3px; }
+#log { margin: 0; max-height: 132px; overflow-y: auto; white-space: pre-wrap; font: inherit; }
+body[data-mode="replica"] #log { max-height: 190px; }
+.prompt { display: flex; gap: 8px; align-items: center; }
+#cmd { flex: 1; background: none; border: 0; outline: 0; color: inherit; font: inherit; text-transform: uppercase; padding: 2px 0; }
+#cmd::placeholder { text-transform: none; color: var(--muted); }
+body[data-mode="replica"] #cmd::placeholder { color: #8a826c; }
+
+@media (max-width: 900px) {
+  main { grid-template-columns: minmax(0, 1fr); padding: 0 16px; }
+  header { padding: 14px 16px 10px; } .tty { margin: 16px; }
+  #scope { height: 56vh; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+
+</style>
+</head>
+<body data-mode="explainer">
+<header>
+  <div class="title">
+    <h1>An Experimental Facility for Sequential Decoding</h1>
+    <p>A working re-implementation of C. W. Niessen’s 1965 MIT doctoral system — the Fano decoder of Fig. A-4 and its tree display</p>
+  </div>
+  <nav class="modes" role="tablist" aria-label="Mode">
+    <button role="tab" data-set-mode="replica" title="The PDP-6 scope and teletype, as in 1965">Replica</button>
+    <button role="tab" data-set-mode="workbench" title="The same facility with modern controls">Workbench</button>
+    <button role="tab" data-set-mode="explainer" title="Narrated, for newcomers">Explainer</button>
+  </nav>
+</header>
+
+<main>
+  <section class="scopewrap">
+    <canvas id="scope" aria-label="Tree display: metric versus depth"></canvas>
+    <div class="legend only-explainer">
+      <span><i class="sw bright"></i>path being searched</span>
+      <span><i class="sw dim"></i>branches already searched</span>
+      <span><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
+      <span><i class="sw thr"></i>running threshold</span>
+    </div>
+    <div id="caption" class="only-explainer" aria-live="polite"></div>
+  </section>
+
+  <aside id="side">
+    <div class="panel controls">
+      <div class="row">
+        <button id="btnRun" class="primary">Run</button>
+        <button id="btnStep" title="G — one step">Step</button>
+        <button id="btnFind" title="Run fast with the display off until a search occurs, restart just before it, replay slowly (p. 24)">Find a search</button>
+      </div>
+      <label>Speed <output id="outSpeed"></output><input id="rngSpeed" type="range" min="0" max="7" step="1"></label>
+      <div class="row checks">
+        <label><input id="chkDisplay" type="checkbox" checked> Display on</label>
+        <label><input id="chkOthers" type="checkbox"> Show both hypotheses</label>
+      </div>
+      <div class="row">
+        <button id="btnRepeat" title="REPEAT — restart from the last saved restart data">Rewind</button>
+        <button id="btnReset">Reset</button>
+        <button id="btnExit" title="EXIT — print the statistics on the teletype">Print stats</button>
+      </div>
+    </div>
+
+    <div class="panel params">
+      <label>Signal-to-noise √(2E/N₀) <output id="outSnr"></output><input id="rngSnr" type="range" min="1.6" max="4" step="0.1"></label>
+      <label>Threshold increment IT0 <output id="outIt0"></output><input id="rngIt0" type="range" min="10" max="200" step="5"></label>
+      <div class="row">
+        <label class="grow">Message <select id="selMsg"><option value="ZERO">all zeros (as in 1965)</option><option value="RANDOM">random bits</option></select></label>
+        <label>Data tape <input id="numSeed" type="number" min="1" max="99999" value="1965"></label>
+      </div>
+    </div>
+
+    <div class="panel readouts" id="readouts"></div>
+
+    <div class="panel charts">
+      <figure><canvas id="chTail" width="300" height="170"></canvas><figcaption>Searches of depth ≥ N vs N <em>(Fig. 6)</em></figcaption></figure>
+      <figure><canvas id="chWait" width="300" height="120"></canvas><figcaption>Waiting line, decoder 20× channel speed</figcaption></figure>
+    </div>
+
+    <div class="panel listing only-explainer">
+      <h2>The 1965 program <span>Fig. A-4 — statements just executed are lit</span></h2>
+      <div id="listing"></div>
+    </div>
+  </aside>
+</main>
+
+<footer class="tty">
+  <pre id="log" aria-live="polite"></pre>
+  <div class="prompt"><span>*</span><input id="cmd" autocomplete="off" spellcheck="false" aria-label="Monitor command" placeholder="monitor command — try HELP"></div>
+</footer>
+
+<script>
+(() => {
+'use strict';
+// ---- rng.js ----
+// All randomness is a pure function of (seed, n) so RESTART replays identically.
+
+function hash32(a, b) {
+  let h = (a ^ 0x9e3779b9) >>> 0;
+  h = Math.imul(h ^ ((b + 0x7f4a7c15) >>> 0), 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  h = Math.imul(h ^ (b >>> 0), 0x27d4eb2f);
+  h ^= h >>> 15;
+  return h >>> 0;
+}
+
+function mulberry32(seed) {
+  let s = seed >>> 0;
+  return function () {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Box-Muller; fills out[0..n-1] with N(0,1) samples
+function gaussians(rand, out, n) {
+  for (let i = 0; i < n; i += 2) {
+    const u = 1 - rand(), v = rand();
+    const r = Math.sqrt(-2 * Math.log(u)), th = 2 * Math.PI * v;
+    out[i] = r * Math.cos(th);
+    if (i + 1 < n) out[i + 1] = r * Math.sin(th);
+  }
+}
+
+// ---- coder.js ----
+// Convolutional coder of Fig. A-1: a shift register (up to 60 bits here, held as two
+// 30-bit words) with modulo-2 parity nets. Bit 1 is the newest bit (information bits
+// enter from the left); SHIFT RIGHT pushes the oldest bit off the far end (SREND).
+
+const MASK30 = 0x3fffffff;
+
+// "P1 = 7360 3601 4576 2426 3054 0000": a 1 means that register stage feeds the adder.
+function parseNet(octal) {
+  const d = octal.replace(/\s/g, '').padEnd(20, '0').slice(0, 20);
+  return [parseInt(d.slice(0, 10), 8), parseInt(d.slice(10, 20), 8)];
+}
+
+// Parity nets of the Fig. A-4 example program (p. 55)
+const P1 = parseNet('7360 3601 4576 2426 3054 0000');
+const P2 = parseNet('5431 2256 7722 3264 7642 0000');
+
+function parity(x) {
+  x ^= x >>> 16; x ^= x >>> 8; x ^= x >>> 4; x ^= x >>> 2; x ^= x >>> 1;
+  return x & 1;
+}
+
+class Coder {
+  constructor(K = 60, nets = [P1, P2]) {
+    this.K = K;            // CONSTRAINT IS K
+    this.nets = nets;
+    this.a = 0;            // stages 1..30, stage 1 at the MSB
+    this.b = 0;            // stages 31..60
+    this.gen = [0, 0];     // GEN(J): channel symbol for information bit J
+  }
+  clear() { this.a = 0; this.b = 0; }                     // SR <- 0
+  bit(pos) {
+    return pos <= 30 ? (this.a >>> (30 - pos)) & 1 : (this.b >>> (60 - pos)) & 1;
+  }
+  setBit(pos, v) {
+    if (pos <= 30) { const m = 1 << (30 - pos); this.a = v ? this.a | m : this.a & ~m; }
+    else { const m = 1 << (60 - pos); this.b = v ? this.b | m : this.b & ~m; }
+  }
+  // SHIFT RIGHT 1 with x entering on the left; returns the bit pushed off (SREND)
+  shiftRight(x) {
+    const end = this.bit(this.K);
+    this.b = (this.b >>> 1) | ((this.a & 1) << 29);
+    this.a = (this.a >>> 1) | (x << 29);
+    if (this.K < 60) {     // nothing lives beyond stage K
+      if (this.K <= 30) { this.a &= ~((1 << (30 - this.K)) - 1); this.b = 0; }
+      else this.b &= ~((1 << (60 - this.K)) - 1);
+    }
+    return end;
+  }
+  // SHIFT LEFT 1 ; ENTER SR END (1, endBit)
+  shiftLeft(endBit) {
+    this.a = ((this.a << 1) & MASK30) | (this.b >>> 29);
+    this.b = (this.b << 1) & MASK30;
+    this.setBit(this.K, endBit);
+  }
+  enter(j) { this.setBit(1, j); }                         // ENTER SR (1, J)
+  // SEQUENCE 1 (S, I, P1, P2): symbol = I P1 P2 as a 3-bit number, with stage 1 = j
+  symbolFor(j) {
+    const a = (this.a & ~(1 << 29)) | (j << 29);
+    let s = j;
+    for (const [na, nb] of this.nets) s = (s << 1) | (parity(a & na) ^ parity(this.b & nb));
+    return s;
+  }
+  // GENERATE 1: shift right, then tabulate the symbol on every branch from this node
+  generate() {
+    const end = this.shiftRight(0);
+    this.gen[0] = this.symbolFor(0);
+    this.gen[1] = this.symbolFor(1);
+    return end;
+  }
+}
+
+// ---- channel.js ----
+
+
+// The thesis recorded real demodulator outputs on tape; simulating the channel on the
+// computer was its first "further work" item (p. 34). This is that: M orthogonal signals
+// in white Gaussian noise. Matched filter i puts out N(0,1), plus sqrt(2E/N0) if signal i
+// was sent. The decoder sees only the ordered list of the l largest outputs (Sec. II-E).
+
+const ADC_GAIN = 80, ADC_ZERO = 512;
+function adc(v) {   // 10-bit A-D converter
+  return Math.max(0, Math.min(1023, Math.round(ADC_ZERO + v * ADC_GAIN)));
+}
+
+// Draw the M filter outputs into out[]
+function filterOutputs(rand, sent, snr, M, out) {
+  gaussians(rand, out, M);
+  out[sent] += snr;
+}
+
+// Indices of the l largest outputs, most probable first
+function orderedList(out, M, l) {
+  const idx = [];
+  for (let i = 0; i < M; i++) idx.push(i);
+  idx.sort((p, q) => out[q] - out[p]);
+  return idx.slice(0, l);
+}
+
+const CACHE = 2048;
+
+class Channel {
+  constructor({ seed = 1965, snr = 2.5, M = 8, listLen = 4, message = 'zero', K = 60 } = {}) {
+    Object.assign(this, { seed, snr, M, listLen, message, K });
+    this.overrides = new Map();          // DATA AT N= edits
+    this.cacheN = new Int32Array(CACHE).fill(-1);
+    this.cache = new Array(CACHE);
+    this.tx = new Coder(K); this.txN = -1; // transmitter's coder, run sequentially
+    this.buf = new Float64Array(M);
+  }
+  msgBit(n) {
+    if (n < 0 || this.message === 'zero') return 0;
+    return hash32(this.seed ^ 0x5eed, n) & 1;
+  }
+  txSymbol(n) {
+    if (this.message === 'zero') return 0;   // all-zero message always codes into symbol 0
+    if (n !== this.txN + 1) {                // rebuild the register from the last K message bits
+      this.tx.clear();
+      for (let k = Math.max(0, n - this.K); k < n; k++) { this.tx.shiftRight(0); this.tx.enter(this.msgBit(k)); }
+    }
+    this.tx.shiftRight(0);
+    const j = this.msgBit(n);
+    const s = this.tx.symbolFor(j);
+    this.tx.enter(j);
+    this.txN = n;
+    return s;
+  }
+  // Ordered list for baud n: { num: signal numbers, code: ADC values }, a pure function of (seed, n)
+  received(n) {
+    const o = this.overrides.get(n);
+    if (o) return o;
+    const slot = n & (CACHE - 1);
+    if (this.cacheN[slot] === n) return this.cache[slot];
+    const rand = mulberry32(hash32(this.seed, n));
+    filterOutputs(rand, this.txSymbol(n), this.snr, this.M, this.buf);
+    const num = orderedList(this.buf, this.M, this.listLen);
+    const r = { num, code: num.map(i => adc(this.buf[i])) };
+    this.cacheN[slot] = n; this.cache[slot] = r;
+    return r;
+  }
+  override(n, list) { this.overrides.set(n, list); }
+  flush() { this.cacheN.fill(-1); this.txN = -1; }
+}
+
+// ---- metric.js ----
+
+
+// Metric increments of Fig. A-4, indexed by the hypothesis' position on the ordered list
+// (position 5 = not on the list). "Computed from data supplied by K. Jordan of Lincoln
+// Laboratory" for sqrt(2E/N0) = 2.5, M = 8, list length 4.
+const IDIST_1965 = [17, -13, -29, -41, -64];
+const METRIC_SCALE = 10;   // integer units per bit; fits the 1965 table (see tests)
+
+// q[i] = Pr(sent signal is in position i+1 of the list); q[l] = Pr(off the list)
+function estimateQ({ snr, M = 8, listLen = 4, trials = 200000, seed = 7 }) {
+  const rand = mulberry32(seed), out = new Float64Array(M), q = new Array(listLen + 1).fill(0);
+  for (let t = 0; t < trials; t++) {
+    filterOutputs(rand, 0, snr, M, out);
+    const pos = orderedList(out, M, listLen).indexOf(0);
+    q[pos < 0 ? listLen : pos]++;
+  }
+  return q.map(c => c / trials);
+}
+
+// p. 29: log2(M q_i) - R on the list, log2(M q_{l+1} / (M - l)) - R off it
+function metricBits(q, { M = 8, listLen = 4, R = 1 } = {}) {
+  return q.map((qi, i) => {
+    const p = Math.max(qi, 1e-9);
+    return (i < listLen ? Math.log2(M * p) : Math.log2(M * p / (M - listLen))) - R;
+  });
+}
+
+function metricTable(snr, opts = {}) {
+  if (Math.abs(snr - 2.5) < 1e-9 && !opts.force) return IDIST_1965.slice();
+  return metricBits(estimateQ({ snr, ...opts }), opts).map(x => Math.round(x * METRIC_SCALE));
+}
+
+// ---- fano.js ----
+
+
+// The Fano sequential decoder of Fig. A-4 (pp. 55-57), ported statement for statement.
+// The cases of switch(pc) are the statement labels of the 1965 program; variable names
+// are his: N node depth, L total metric, LT trial metric, IT threshold, IT0 threshold
+// increment, FLAG, LI(N) which-most-likely branch is being tried at N, LMBD(N) metric
+// increment, ISR(N) bit pushed off the register, HYP(N) channel symbol on the path.
+//
+// step() runs to the next display checkpoint (p. 58):
+//   'enter'   A  ENTER BRANCH - a new branch has been computed
+//   'advance' B  WAIT - branch accepted, threshold raised
+//   'lower'   C  threshold lowered
+//   'retreat' D  WAIT - backed up one node
+
+const RING = 256;          // BACKUP DEPTH IS 256 NODES
+const RM = RING - 1;
+
+class FanoDecoder {
+  constructor({ channel, idist, it0 = 50, K = 60 }) {
+    this.channel = channel;
+    this.IDIST = idist;
+    this.IT0 = it0;
+    this.coder = new Coder(K);
+    this.LI = new Int32Array(RING);     // SAVE LI(256), HYP(256), LMBD(256), ISR(256)
+    this.HYP = new Int32Array(RING);
+    this.LMBD = new Int32Array(RING);
+    this.ISR = new Int32Array(RING);
+    this.BIT = new Int32Array(RING);    // information bit J on the path (the register, unrolled)
+    this.reset();
+  }
+
+  reset() {                             // statement 20
+    this.N = 0; this.IT = 0; this.L = 0; this.LT = 0; this.LB = 0;
+    this.coder.clear();
+    this.FLAG = 0;
+    this.LI.fill(0); this.LI[0] = 1;
+    this.POS = 0; this.J = 0;
+    this.ICOUNT = 0;
+    this.pc = 1;
+  }
+
+  // CALL FIND (POS, J, LI(N), 2, N, 0): the LI-th most likely of the two hypotheses.
+  // Hypotheses off the list are equiprobable; choose among them in a "random (yet
+  // repeatable) way" so the all-zero test message is not accidentally favoured (p. 19).
+  find(li, n) {
+    const { num } = this.channel.received(n), off = num.length + 1;
+    const g = this.coder.gen;
+    const p0 = num.indexOf(g[0]) + 1 || off, p1 = num.indexOf(g[1]) + 1 || off;
+    const first = p0 < p1 ? 0 : p1 < p0 ? 1 : hash32(this.channel.seed ^ 0xf17d, n) & 1;
+    this.J = li === 1 ? first : 1 - first;
+    this.POS = this.J === 0 ? p0 : p1;
+  }
+  // XPFINDF(hypothesis, N): list position of a symbol
+  xpfindf(sym, n) {
+    const { num } = this.channel.received(n);
+    return num.indexOf(sym) + 1 || num.length + 1;
+  }
+
+  step() {
+    const boxes = [];
+    let beginSearch = false;
+    const ev = kind => ({
+      kind, boxes, beginSearch, N: this.N, L: this.L, LT: this.LT, IT: this.IT, FLAG: this.FLAG,
+      J: this.J, POS: this.POS,
+    });
+    for (;;) {
+      boxes.push(this.pc);
+      switch (this.pc) {
+        case 1: {                                   // 32: GENERATE 1 ... LT <- L + [LMBD(N) <- IDIST(POS)]
+          const k = this.N & RM;
+          this.ICOUNT++;
+          this.ISR[k] = this.coder.generate();      // ISR(N) <- SREND
+          this.find(this.LI[k], this.N);
+          this.coder.enter(this.J);                 // ENTER SR (1, J)
+          this.HYP[k] = this.coder.gen[this.J];     // HYP(N) <- GEN(J)
+          this.BIT[k] = this.J;
+          this.LMBD[k] = this.IDIST[this.POS - 1];
+          this.LT = this.L + this.LMBD[k];
+          this.pc = 2;
+          return ev('enter');                       // 2: ENTER BRANCH
+        }
+        case 2: this.pc = this.LT < this.IT ? 11 : 3; break;          // IF [LT .L. IT] 11
+        case 3: this.N++; this.pc = 4; break;                         // N <- N + 1
+        case 4: this.pc = this.FLAG !== 0 ? 8 : 5; break;             // IF [FLAG .NE. 0] 8
+        case 5: this.pc = this.IT + this.IT0 > this.LT ? 7 : 6; break; // IF [IT + IT0 .G. LT] 7
+        case 6: this.IT += this.IT0; this.pc = 5; break;              // IT <- IT + IT0 ; GO TO 5
+        case 7:                                                       // L <- LT ; LI(N) <- 1 ; WAIT
+          this.L = this.LT; this.LI[this.N & RM] = 1; this.pc = 1;
+          return ev('advance');
+        case 8: this.pc = this.IT + this.IT0 > this.L ? 10 : 9; break;   // IF [IT + IT0 .G. L] 10
+        case 9: this.pc = this.IT + this.IT0 <= this.LT ? 7 : 10; break; // IF [IT + IT0 .LE. LT] 7
+        case 10: this.FLAG = 0; this.pc = 5; break;                   // CLEAR FLAG ; GO TO 5
+        case 11:                                                      // BEGIN SEARCH ; SET FLAG
+          beginSearch = true;
+          this.FLAG = 1;
+          this.coder.shiftLeft(this.ISR[this.N & RM]);                 // SHIFT LEFT 1 ; ENTER SR END (1, SREND)
+          this.pc = 12; break;
+        case 12: this.pc = this.N === 0 ? 18 : 13; break;             // IF [N .E. 0] 18
+        case 13: this.LB = this.L - this.LMBD[(this.N - 1) & RM]; this.pc = 14; break;
+        case 14: this.pc = this.LB < this.IT ? 18 : 15; break;        // IF [LB .L. IT] 18
+        case 15:                                                      // N <- N-1 ; restore register ; WAIT
+          this.N--;
+          this.coder.shiftLeft(this.ISR[this.N & RM]);
+          this.L = this.LB;
+          this.pc = 16;
+          return ev('retreat');
+        case 16: this.pc = this.LI[this.N & RM] === 2 ? 12 : 17; break; // IF [LI(N) .E. 2] 12
+        case 17: this.LI[this.N & RM]++; this.pc = 1; break;
+        case 18: this.IT -= this.IT0; this.pc = 19; return ev('lower');
+        case 19: this.LI[this.N & RM] = 1; this.pc = 1; break;
+      }
+    }
+  }
+
+  // RESTART DATA ... IS (L, IT, FLAG, TABLES, LI, 256, LMBD, 256, ISR, 256, HYP, 256)
+  snapshot() {
+    return {
+      N: this.N, L: this.L, LT: this.LT, IT: this.IT, FLAG: this.FLAG, ICOUNT: this.ICOUNT, pc: this.pc,
+      a: this.coder.a, b: this.coder.b,
+      LI: this.LI.slice(), HYP: this.HYP.slice(), LMBD: this.LMBD.slice(), ISR: this.ISR.slice(), BIT: this.BIT.slice(),
+    };
+  }
+  restore(s) {
+    Object.assign(this, { N: s.N, L: s.L, LT: s.LT, IT: s.IT, FLAG: s.FLAG, ICOUNT: s.ICOUNT, pc: s.pc });
+    this.coder.a = s.a; this.coder.b = s.b;
+    this.LI.set(s.LI); this.HYP.set(s.HYP); this.LMBD.set(s.LMBD); this.ISR.set(s.ISR); this.BIT.set(s.BIT);
+  }
+}
+
+// ---- stats.js ----
+// COMPUTE SEARCH DEPTH and COMPUTE WAITING LINE <ratio>, as defined on pp. 20 and 48-49.
+//
+// A search begins when the algorithm fails to advance (BEGIN SEARCH, if none is in progress)
+// and is over when N exceeds the value it had when the search began. Its depth is that value
+// minus the minimum N reached; a computation is counted at every N <- N+1 or N <- N-1.
+//
+// Waiting line: a baud arrives every `ratio` decoder moves. Each advance takes one baud off
+// the line and each retreat puts one back. The line is sampled whenever a baud is received.
+
+const BINS = 128;
+
+class Stats {
+  constructor(ratio = 20) {
+    this.ratio = ratio;
+    this.depthHist = new Uint32Array(BINS);   // grain 1
+    this.compHist = new Uint32Array(BINS);    // grain 4
+    this.waitHist = new Uint32Array(BINS);
+    this.searches = 0; this.moves = 0;
+    this.inSearch = false; this.n0 = 0; this.minN = 0; this.comps = 0;
+    this.wait = 0; this.arrival = 0;
+  }
+  get searchDepth() { return this.inSearch ? this.n0 - this.minN : 0; }   // SEARCH DEPTH
+  get waitingLine() { return Math.floor(this.wait); }                     // WAITING LINE
+
+  onEvent(ev) {
+    if (ev.beginSearch && !this.inSearch) {
+      this.inSearch = true; this.comps = 0;
+      this.n0 = this.minN = ev.kind === 'retreat' ? ev.N + 1 : ev.N;
+    }
+    if (ev.kind !== 'advance' && ev.kind !== 'retreat') return;
+    this.moves++;
+    const fwd = ev.kind === 'advance';
+    if (this.inSearch) {
+      this.comps++;
+      if (ev.N < this.minN) this.minN = ev.N;
+      if (fwd && ev.N > this.n0) {
+        this.depthHist[Math.min(BINS - 1, this.n0 - this.minN)]++;
+        this.compHist[Math.min(BINS - 1, this.comps >> 2)]++;
+        this.searches++; this.inSearch = false;
+      }
+    }
+    // one decoder move = 1/ratio of a baud time
+    this.wait += 1 / this.ratio + (fwd ? -1 : 1);
+    this.arrival += 1 / this.ratio;
+    if (this.wait < 0) {                      // caught up: idle until the next baud arrives
+      this.wait = 0; this.arrival = 1;
+    }
+    while (this.arrival >= 1) { this.arrival -= 1; this.waitHist[Math.min(BINS - 1, Math.floor(this.wait))]++; }
+  }
+
+  // Fig. 6: number of searches of depth >= n
+  depthTail() {
+    const t = new Array(BINS).fill(0);
+    let acc = 0;
+    for (let i = BINS - 1; i >= 0; i--) { acc += this.depthHist[i]; t[i] = acc; }
+    return t;
+  }
+
+  clone() {
+    const s = new Stats(this.ratio);
+    Object.assign(s, this);
+    s.depthHist = this.depthHist.slice(); s.compHist = this.compHist.slice(); s.waitHist = this.waitHist.slice();
+    return s;
+  }
+}
+
+// ---- treeStore.js ----
+// Storage for the display of the tree (Appendix C). Branches are kept in a "loop" per depth;
+// each carries a back pointer to the branch that ends where it begins, which is what lets the
+// light pen intensify a unique path back toward the origin. A branch the algorithm searches
+// again is recognised rather than stored twice. When storage is depleted the oldest loops
+// are removed a whole loop at a time (the 1965 display had room for 512 branches).
+
+class TreeStore {
+  constructor(capacity = 512) {
+    this.capacity = capacity;
+    this.clear();
+  }
+  clear() { this.loops = new Map(); this.count = 0; this.minDepth = Infinity; }
+
+  add(d, y0, dy, bit, sym, parent, correct, other = false) {
+    let loop = this.loops.get(d);
+    if (!loop) { loop = []; this.loops.set(d, loop); if (d < this.minDepth) this.minDepth = d; }
+    for (const b of loop) {
+      if (b.y0 === y0 && b.bit === bit && b.parent === parent) { if (!other) b.other = false; return b; }
+    }
+    const b = { d, y0, dy, bit, sym, parent, correct, other };
+    loop.push(b); this.count++;
+    while (this.count > this.capacity && this.minDepth < d) this.dropLoop(this.minDepth);
+    return b;
+  }
+  dropLoop(d) {
+    const loop = this.loops.get(d);
+    if (loop) { this.count -= loop.length; this.loops.delete(d); }
+    if (d === this.minDepth) {
+      this.minDepth = Infinity;
+      for (const k of this.loops.keys()) if (k < this.minDepth) this.minDepth = k;
+    }
+  }
+  // "every time an advance is made to a depth not reached before, the loop for N - 250 is removed"
+  trim(n) { for (let d = this.minDepth; d <= n - 250; d++) this.dropLoop(d); }
+
+  *visible(d0, d1) {
+    for (let d = Math.max(0, Math.floor(d0)); d <= d1; d++) {
+      const loop = this.loops.get(d);
+      if (loop) yield* loop;
+    }
+  }
+}
+
+// ---- facility.js ----
+
+
+
+
+
+// The monitor system (Sec. III-C, Appendix A-V-B): runs the algorithm between display
+// checkpoints, feeds the tree display, keeps restart data, and obeys teletype commands.
+
+const DECODE_LAG = 200;    // a bit this far behind the deepest node is taken as decoded
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+const HELP = [
+  'RUN  STOP  G  STEPS=n        run / stop / one step / n steps',
+  'SPEED=0..6                   2^(1-n) sec per step;  SPEED=7 fast, display off, tree remembered',
+  'MODE0  MODE1                 display program off (fastest) / on',
+  'GO TO N=n                    run until node depth n, then READY',
+  'OTHERS=1|0                   show every hypothesis at the current node',
+  'RESTART AT N=n  REPEAT  STORE   restart from saved restart data',
+  'DATA AT N=n: v s, v s, ...   replace the ordered list at node n (* keeps a value)',
+  'DDT [IT0= SN= SEED= MSG=ZERO|RANDOM ISDM= IWLM= K=]   examine / change parameters',
+  'EXIT                         print statistics and stop        RESET  start over',
+];
+
+class Facility {
+  constructor(cfg = {}) {
+    this.cfg = {
+      seed: 1965, snr: 2.5, it0: 50, message: 'zero', ratio: 20, capacity: 512,
+      restartEvery: 100, IWLM: 100, ISDM: 25, radix: 10, ...cfg,
+    };
+    this.onPrint = null;
+    this.speed = 3; this.mode = 1; this.others = 0;
+    this.reset();
+  }
+
+  print(s) { if (this.onPrint) this.onPrint(s); }
+
+  reset() {
+    const c = this.cfg;
+    this.channel = new Channel({ seed: c.seed, snr: c.snr, message: c.message });
+    this.idist = metricTable(c.snr);
+    this.dec = new FanoDecoder({ channel: this.channel, idist: this.idist, it0: c.it0 });
+    this.stats = new Stats(c.ratio);
+    this.store = new TreeStore(c.capacity);
+    this.pathBranch = new Array(256).fill(null);
+    this.running = false; this.stepsLeft = null; this.gotoN = null; this.acc = 0;
+    this.maxN = 0; this.errors = 0; this.offPath = -1; this.lastOffPath = -1;
+    this.tentative = null; this.lastEvent = null;
+    this.snapshots = []; this.storePending = false;
+    this.haltedSearch = false; this.haltedWait = false;
+    this.saveSnapshot();
+  }
+
+  run() { this.running = true; this.acc = 0; }
+  stop() { this.running = false; this.stepsLeft = null; }
+
+  saveSnapshot() {
+    this.snapshots.push({
+      N: this.dec.N, dec: this.dec.snapshot(), stats: this.stats.clone(),
+      maxN: this.maxN, errors: this.errors, offPath: this.offPath,
+    });
+    if (this.snapshots.length > 10) this.snapshots.shift();   // "usually about ten"
+    this.storePending = false;
+  }
+
+  restartAt(n) {
+    let best = null;
+    for (const s of this.snapshots) if (s.N <= n && (!best || s.N > best.N)) best = s;
+    if (!best) { this.print('NO RESTART DATA AT OR BELOW N = ' + n); return -1; }
+    this.dec.restore(best.dec);
+    this.stats = best.stats.clone();
+    this.maxN = best.maxN; this.errors = best.errors; this.offPath = best.offPath;
+    this.snapshots = this.snapshots.filter(s => s.N <= best.N);   // restart destroys later restart data
+    this.store.clear(); this.pathBranch.fill(null);
+    this.tentative = null; this.lastEvent = null;
+    this.haltedSearch = this.haltedWait = false;
+    return best.N;
+  }
+
+  stepOnce() {
+    const d = this.dec, ch = this.channel, ev = d.step();
+    this.stats.onEvent(ev);
+    this.lastEvent = ev;
+    if (ev.kind === 'enter') {
+      const k = ev.N & 255, bit = ev.J, sym = d.HYP[k];
+      const correct = this.offPath < 0 && bit === ch.msgBit(ev.N);
+      this.tentative = { d: ev.N, y0: ev.L, dy: ev.LT - ev.L, bit, sym, pos: ev.POS, li: d.LI[k], fail: ev.LT < ev.IT, correct };
+      if (this.mode === 1) {
+        let parent = ev.N > 0 ? this.pathBranch[(ev.N - 1) & 255] : null;
+        if (parent && (parent.d !== ev.N - 1 || parent.y0 + parent.dy !== ev.L)) parent = null;
+        this.pathBranch[k] = this.store.add(ev.N, ev.L, ev.LT - ev.L, bit, sym, parent, correct);
+        if (this.others) {                      // OTHERT(j) <- IDIST[XPFINDF(GEN(j), N)] ; CALL CHANGE
+          const jo = 1 - bit, so = d.coder.gen[jo];
+          this.store.add(ev.N, ev.L, this.idist[d.xpfindf(so, ev.N) - 1], jo, so, parent,
+            this.offPath < 0 && jo === ch.msgBit(ev.N), true);
+        }
+      }
+    } else {
+      this.tentative = null;
+      if (ev.kind === 'advance') {
+        const at = ev.N - 1;
+        if (this.offPath < 0 && d.BIT[at & 255] !== ch.msgBit(at)) this.offPath = this.lastOffPath = at;
+        if (ev.N > this.maxN) {
+          this.maxN = ev.N;
+          this.store.trim(ev.N);
+          const f = at - DECODE_LAG;
+          if (f >= 0 && d.BIT[f & 255] !== ch.msgBit(f)) this.errors++;
+          if (ev.N % this.cfg.restartEvery === 0) this.saveSnapshot();
+        }
+      } else if (ev.kind === 'retreat' && this.offPath >= ev.N) this.offPath = -1;
+    }
+    if (this.storePending && d.pc === 1) this.saveSnapshot();
+
+    // Fig. A-4, statement 1: TYPEOUT ... ; GO TO MONITOR
+    const st = this.stats, c = this.cfg;
+    if (c.ISDM && st.searchDepth >= c.ISDM && !this.haltedSearch) {
+      this.haltedSearch = true; this.print('SEARCH DEPTH IS ' + st.searchDepth); this.print('READY'); this.stop();
+    }
+    if (!st.inSearch) this.haltedSearch = false;
+    if (c.IWLM && st.waitingLine >= c.IWLM && !this.haltedWait) {
+      this.haltedWait = true; this.print('WAITING LINE IS ' + st.waitingLine); this.print('READY'); this.stop();
+    }
+    if (st.waitingLine < c.IWLM / 2) this.haltedWait = false;
+
+    if (this.gotoN != null && ev.kind === 'advance' && d.N >= this.gotoN) {
+      this.gotoN = null; this.print('READY'); this.stop();
+    }
+    if (this.stepsLeft != null && --this.stepsLeft <= 0) this.stop();
+    return ev;
+  }
+
+  get fast() { return this.mode === 0 || this.speed === 7; }
+
+  // Advance the clock by dt ms; returns the number of steps taken
+  pump(dt, budget = 12) {
+    if (!this.running) return 0;
+    let n = 0;
+    if (this.fast) {
+      const t0 = now();
+      do { for (let i = 0; i < 400 && this.running; i++, n++) this.stepOnce(); }
+      while (this.running && now() - t0 < budget);
+    } else {
+      const iv = 2000 / Math.pow(2, this.speed);
+      this.acc += dt;
+      while (this.acc >= iv && this.running && n < 4) { this.stepOnce(); this.acc -= iv; n++; }
+      if (this.acc > iv) this.acc = iv;
+    }
+    return n;
+  }
+
+  // Run silently until a search at least minDepth deep is under way, then restart just before it
+  findSearch(minDepth = 3, maxSteps = 3e6) {
+    const c = this.cfg, save = { mode: this.mode, K: c.restartEvery, ISDM: c.ISDM, IWLM: c.IWLM };
+    this.stop();
+    this.mode = 0; c.restartEvery = 8; c.ISDM = 0; c.IWLM = 0;
+    let steps = 0;
+    this.lastOffPath = -1;
+    while (this.dec.pc !== 1) this.stepOnce();
+    this.saveSnapshot();
+    while (this.stats.searchDepth < minDepth && steps++ < maxSteps) this.stepOnce();
+    const found = this.stats.searchDepth >= minDepth, n0 = this.stats.n0;
+    const wrongTurn = this.lastOffPath >= n0 - 30 && this.lastOffPath <= n0 ? this.lastOffPath : -1;
+    Object.assign(c, { restartEvery: save.K, ISDM: save.ISDM, IWLM: save.IWLM });
+    this.mode = 1;
+    if (!found) return null;
+    const from = this.restartAt(Math.max(0, n0 - minDepth - 6));
+    return { n0, from, wrongTurn };
+  }
+
+  report() {
+    const st = this.stats, tail = st.depthTail(), out = [];
+    out.push(`NODES DECODED ${this.maxN}   COMPUTATIONS ${this.dec.ICOUNT}   PER NODE ${(this.dec.ICOUNT / Math.max(1, this.maxN)).toFixed(3)}`);
+    out.push(`SEARCHES ${st.searches}   BIT ERRORS ${this.errors}   WAITING LINE ${st.waitingLine}`);
+    out.push('SEARCHES OF DEPTH >= N');
+    for (let i = 1; i < 128 && tail[i] > 0; i++) out.push(`  ${String(i).padStart(3)}  ${tail[i]}`);
+    return out;
+  }
+
+  exec(line) {
+    const raw = line.trim(), s = raw.toUpperCase().replace(/\s+/g, '');
+    let mt;
+    if (!s) return;
+    if (s === 'RUN') this.run();
+    else if (s === 'STOP') this.stop();
+    else if (s === 'G') { this.stop(); this.stepOnce(); }
+    else if ((mt = s.match(/^STEPS=(\d+)$/))) { this.stepsLeft = +mt[1]; this.run(); }
+    else if ((mt = s.match(/^SPEED=([0-7])$/))) this.speed = +mt[1];
+    else if ((mt = s.match(/^GOTON=(\d+)$/))) { this.gotoN = +mt[1]; this.run(); }
+    else if (s === 'MODE0') { this.mode = 0; this.others = 0; this.store.clear(); this.pathBranch.fill(null); }
+    else if (s === 'MODE1') this.mode = 1;
+    else if ((mt = s.match(/^OTHERS=([01])$/))) this.others = +mt[1];
+    else if ((mt = s.match(/^RESTARTATN=(\d+)$/))) { this.stop(); const n = this.restartAt(+mt[1]); if (n >= 0) this.print('RESTARTED AT N = ' + n); }
+    else if (s === 'REPEAT') { this.stop(); const n = this.restartAt(Infinity); this.print('RESTARTED AT N = ' + n); }
+    else if (s === 'STORE') this.storePending = true;
+    else if (s === 'EXIT') { this.stop(); this.report().forEach(l => this.print(l)); }
+    else if (s === 'RESET') { this.reset(); this.print('READY'); }
+    else if (s === 'HELP' || s === '?') HELP.forEach(l => this.print(l));
+    else if (/^N0=/.test(s) || /^IO=/.test(s)) this.print('OK');
+    else if (s.startsWith('DDT')) this.ddt(s.slice(3));
+    else if ((mt = raw.match(/^DATA\s*AT\s*N\s*=\s*(\d+)\s*:?(.*)$/i))) this.dataAt(+mt[1], mt[2]);
+    else this.print('?');
+  }
+
+  ddt(arg) {
+    const c = this.cfg;
+    let mt;
+    if (!arg) {
+      this.print(`IT0/ ${c.it0}   SN/ ${c.snr}   SEED/ ${c.seed}   MSG/ ${c.message.toUpperCase()}   ISDM/ ${c.ISDM}   IWLM/ ${c.IWLM}   K/ ${c.restartEvery}`);
+      this.print(`IDIST/ ${this.idist.join(' ')}`);
+    } else if ((mt = arg.match(/^IT0=(\d+)$/)) && +mt[1] > 0) { c.it0 = +mt[1]; this.dec.IT0 = c.it0; }
+    else if ((mt = arg.match(/^ISDM=(\d+)$/))) c.ISDM = +mt[1];
+    else if ((mt = arg.match(/^IWLM=(\d+)$/))) c.IWLM = +mt[1];
+    else if ((mt = arg.match(/^K=(\d+)$/)) && +mt[1] > 0) c.restartEvery = +mt[1];
+    else if ((mt = arg.match(/^SN=(\d*\.?\d+)$/))) { c.snr = +mt[1]; this.reset(); this.print('NEW CHANNEL. IDIST/ ' + this.idist.join(' ')); }
+    else if ((mt = arg.match(/^SEED=(\d+)$/))) { c.seed = +mt[1]; this.reset(); this.print('NEW DATA TAPE'); }
+    else if ((mt = arg.match(/^MSG=(ZERO|RANDOM)$/))) { c.message = mt[1].toLowerCase(); this.reset(); this.print('NEW DATA TAPE'); }
+    else this.print('?');
+  }
+
+  // DATA AT N=n: <signal value> <signal number>, ...   (* leaves a quantity unchanged)
+  dataAt(n, text) {
+    const cur = this.channel.received(n), num = cur.num.slice(), code = cur.code.slice(), rx = this.cfg.radix;
+    const rows = text.split(',').map(r => r.trim()).filter(Boolean);
+    for (let i = 0; i < rows.length && i < num.length; i++) {
+      const [v, sgn] = rows[i].split(/\s+/);
+      if (v && v !== '*') code[i] = parseInt(v, rx) & 1023;
+      if (sgn && sgn !== '*') num[i] = parseInt(sgn, rx) & 7;
+    }
+    if (rows.length) this.channel.override(n, { num, code });
+    const l = this.channel.received(n);
+    this.print(`N = ${n}: ` + l.num.map((s, i) => `${l.code[i].toString(rx)} ${s.toString(rx)}`).join(', '));
+  }
+}
+
+// ---- display.js ----
+// The output display (Sec. III-B): x is depth in the tree, y the total metric, and each branch
+// a line segment whose slope is proportional to its metric increment (SCALE 32: an increment
+// of 32 is drawn at 45 degrees). The path being searched is brighter than everything else.
+
+const THEMES = {
+  replica: {
+    bg: '#020805', fade: 'rgba(2,8,5,0.45)', bright: '#c9ffdc', dim: 'rgba(80,255,150,0.38)', pin: 'rgba(150,255,190,0.8)',
+    thr: 'rgba(80,255,150,0.13)', thrHi: 'rgba(120,255,170,0.6)', text: 'rgba(140,255,180,0.85)', faint: 'rgba(80,255,150,0.4)',
+    fail: '#c9ffdc', wrong: null, glow: 'rgba(80,255,150,0.9)', font: '13px "IBM Plex Mono", ui-monospace, Menlo, monospace',
+  },
+  workbench: {
+    bg: '#0d1117', fade: null, bright: '#ffd166', dim: '#3e5878', pin: '#8fb8e8',
+    thr: 'rgba(255,255,255,0.06)', thrHi: '#e85d75', text: '#c9d1d9', faint: '#5c6b7e',
+    fail: '#e85d75', wrong: null, glow: null, font: '12px "IBM Plex Mono", ui-monospace, Menlo, monospace',
+  },
+  explainer: {
+    bg: '#fdfcf8', fade: null, bright: '#1d4ed8', dim: '#a9b4c6', pin: '#5b7fd6',
+    thr: '#ece8dc', thrHi: '#2b8a3e', text: '#33312c', faint: '#9a958a',
+    fail: '#d9480f', wrong: '#e8590c', glow: null, font: '12px "IBM Plex Mono", ui-monospace, Menlo, monospace',
+  },
+};
+
+const TOP = 46, BOTTOM = 30;
+const STAR = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+
+class Scope {
+  constructor(canvas) {
+    this.cv = canvas; this.ctx = canvas.getContext('2d');
+    this.view = { x0: -1.5, yc: 40, w: 16 };
+    this.follow = true;
+    this.pin = null;          // branch whose path back is intensified (light pen on a node)
+    this.inspect = null;      // depth whose ordered list is shown instead of the current one
+    this.hover = null; this.mouse = null;
+    this.dataMode = false; this.moveMode = false; this.drift = null;
+    this.words = [];
+  }
+  resize() {
+    const r = this.cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    this.W = Math.max(200, r.width); this.H = Math.max(200, r.height);
+    this.cv.width = Math.round(this.W * dpr); this.cv.height = Math.round(this.H * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.cleared = false;
+  }
+  get dx() { return this.W / this.view.w; }
+  X(d) { return (d - this.view.x0) * this.dx; }
+  Y(y) { return TOP + (this.H - TOP - BOTTOM) / 2 - (y - this.view.yc) * this.dx / 32; }
+  resetView(f) { this.follow = true; this.view.x0 = f.dec.N - this.view.w * 0.5; this.view.yc = f.dec.L; }
+
+  track(f, quick) {
+    const v = this.view, d = f.dec;
+    if (this.drift) { v.x0 += this.drift[0] * 0.12 * (1 + f.speed); v.yc -= this.drift[1] * 4 * (1 + f.speed); this.follow = false; }
+    if (!this.follow) return;
+    const tip = f.tentative ? f.tentative.d + 1 : d.N, e = quick ? 0.35 : 0.1;
+    let tx = v.x0;
+    if (tip > v.x0 + v.w * 0.78) tx = tip - v.w * 0.78;
+    if (d.N < v.x0 + v.w * 0.12) tx = d.N - v.w * 0.12;
+    v.x0 += (tx - v.x0) * e;
+    const span = (this.H - TOP - BOTTOM) * 32 / this.dx;     // metric units visible
+    if (Math.abs(d.L - v.yc) > span * 0.22) v.yc += (d.L - v.yc - Math.sign(d.L - v.yc) * span * 0.22) * e;
+  }
+
+  line(x1, y1, x2, y2) { const c = this.ctx; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); }
+
+  draw(f, mode, o = {}) {
+    const c = this.ctx, T = THEMES[mode], v = this.view, d = f.dec, W = this.W, H = this.H;
+    const num = n => (mode === 'replica' ? n.toString(8) : String(n));
+    c.shadowBlur = 0; c.shadowColor = 'transparent';
+    if (T.fade && this.cleared) { c.fillStyle = T.fade; c.fillRect(0, 0, W, H); }
+    else { c.fillStyle = T.bg; c.fillRect(0, 0, W, H); this.cleared = true; }
+    c.font = T.font; c.textBaseline = 'middle'; c.lineCap = 'round';
+    c.shadowColor = T.glow || 'transparent'; c.shadowBlur = T.glow ? 6 : 0;
+    this.words = [];
+
+    if (f.fast && f.running) {               // display program not running
+      c.fillStyle = T.text; c.textAlign = 'left'; c.fillText('RUN', 12, H - 14);
+      c.textAlign = 'right'; c.fillText(String(d.N), W - 12, H - 14);
+      if (mode !== 'replica') { c.textAlign = 'center'; c.fillStyle = T.faint; c.fillText(f.mode === 0 ? 'MODE0 — display off' : 'SPEED=7 — display off, tree remembered', W / 2, H / 2); }
+      return;
+    }
+
+    // threshold lines, the running threshold brighter
+    const it0 = d.IT0, half = (H - TOP - BOTTOM) / 2 * 32 / this.dx;
+    c.lineWidth = 1;
+    for (let t = Math.ceil((v.yc - half) / it0) * it0; t <= v.yc + half; t += it0) {
+      if (t === d.IT) continue;
+      c.strokeStyle = T.thr; this.line(0, this.Y(t), W, this.Y(t));
+    }
+    c.strokeStyle = T.thrHi; c.lineWidth = 1.5; this.line(0, this.Y(d.IT), W, this.Y(d.IT));
+    if (mode !== 'replica') { c.fillStyle = T.thrHi; c.textAlign = 'right'; c.fillText('threshold ' + d.IT, W - 8, this.Y(d.IT) - 9); }
+
+    // depth marks every 10 nodes
+    c.textAlign = 'center';
+    for (let n = Math.max(0, Math.ceil(v.x0 / 10) * 10); n <= v.x0 + v.w; n += 10) {
+      c.strokeStyle = T.faint; this.line(this.X(n), H - BOTTOM, this.X(n), H - BOTTOM + 6);
+      if (this.X(n) > 64 && this.X(n) < W - (mode === 'replica' ? 190 : 70)) { c.fillStyle = T.faint; c.fillText(String(n), this.X(n), H - BOTTOM + 16); }
+    }
+
+    // every branch searched and still remembered
+    c.lineWidth = 1.2;
+    for (const b of f.store.visible(v.x0 - 1, v.x0 + v.w + 1)) {
+      c.strokeStyle = T.wrong && !b.correct ? T.wrong : T.dim;
+      c.globalAlpha = T.wrong && !b.correct ? 0.55 : 1;
+      this.line(this.X(b.d), this.Y(b.y0), this.X(b.d + 1), this.Y(b.y0 + b.dy));
+      if (b.other && this.dx > 20) { c.fillStyle = T.faint; c.textAlign = 'left'; c.fillText(num(b.sym), this.X(b.d + 1) + 4, this.Y(b.y0 + b.dy)); }
+    }
+    c.globalAlpha = 1;
+
+    // light pen on a node: intensify the unique path leading back from it
+    const pinned = this.pin || this.hover;
+    if (pinned) {
+      c.strokeStyle = T.pin; c.lineWidth = 2;
+      for (let b = pinned; b && b.d >= v.x0 - 1; b = b.parent) this.line(this.X(b.d), this.Y(b.y0), this.X(b.d + 1), this.Y(b.y0 + b.dy));
+    }
+
+    // the current path, from the DISPLAY INCREMENTS table (LMBD)
+    c.lineWidth = 2.2;
+    let y = d.L;
+    const lo = Math.max(0, d.N - 255, Math.floor(v.x0) - 1);
+    for (let n = d.N - 1; n >= lo; n--) {
+      const y0 = y - d.LMBD[n & 255];
+      c.strokeStyle = T.wrong && f.offPath >= 0 && n >= f.offPath ? T.wrong : T.bright;
+      this.line(this.X(n), this.Y(y0), this.X(n + 1), this.Y(y));
+      y = y0;
+    }
+    const t = f.tentative;
+    if (t) {
+      c.strokeStyle = t.fail ? T.fail : (T.wrong && !t.correct ? T.wrong : T.bright);
+      if (t.fail && mode !== 'replica') c.setLineDash([5, 4]);
+      this.line(this.X(t.d), this.Y(t.y0), this.X(t.d + 1), this.Y(t.y0 + t.dy));
+      c.setLineDash([]);
+    }
+    c.fillStyle = T.bright;                        // the small blob at the present value of N
+    c.beginPath(); c.arc(this.X(d.N), this.Y(d.L), 4, 0, 7); c.fill();
+
+    // shift register bits and channel signal numbers across the top, above their branches
+    if (this.dx >= 15) {
+      c.textAlign = 'center';
+      const last = t ? t.d : d.N - 1;
+      for (let n = Math.max(lo, Math.ceil(v.x0 - 0.5)); n <= last && n < v.x0 + v.w; n++) {
+        const cur = t && n === t.d;
+        c.fillStyle = cur ? T.bright : T.text;
+        c.fillText(String(cur ? t.bit : d.BIT[n & 255]), this.X(n + 0.5), 14);
+        c.fillStyle = cur ? T.bright : T.faint;
+        c.fillText(num(cur ? t.sym : d.HYP[n & 255]), this.X(n + 0.5), 31);
+      }
+    }
+    if (this.dataMode) {
+      c.fillStyle = T.bright;
+      for (let n = Math.max(0, Math.ceil(v.x0)); n < v.x0 + v.w; n++) { c.beginPath(); c.arc(this.X(n), 42, 2, 0, 7); c.fill(); }
+    }
+
+    // ordered list for this node, and the GEN table (coder assignments at the current node)
+    const at = this.inspect != null ? this.inspect : (this.hover ? this.hover.d : d.N), r = f.channel.received(at);
+    c.textAlign = 'left'; c.fillStyle = T.faint;
+    let ty = H - BOTTOM - 22 - r.num.length * 15;
+    const head = mode === 'replica' ? 'N ' + at : 'list at node ' + at;
+    c.fillText(head, 12, ty - 16);
+    r.num.forEach((s, i) => {
+      const onBranch = t && at === t.d && s === t.sym;
+      c.fillStyle = onBranch ? T.bright : T.text;
+      c.fillText(num(r.code[i]).padStart(4) + '  ' + num(s), 12, ty + i * 15);
+    });
+    if (at === d.N) {
+      const g = d.coder.gen, gx = Math.max(96, c.measureText(head).width + 30);
+      c.fillStyle = T.faint; c.fillText('GEN', gx, ty - 16);
+      c.fillStyle = T.text;
+      if (t) { c.fillText('0  ' + num(g[0]), gx, ty); c.fillText('1  ' + num(g[1]), gx, ty + 15); }
+    }
+
+    // RUN / STOP, depth as a decimal number, light-pen words
+    c.fillStyle = T.text; c.textAlign = 'left'; c.fillText(f.running ? 'RUN' : 'STOP', 12, H - 14);
+    c.textAlign = 'right'; c.fillText(String(d.N), W - 12, H - 14);
+    if (mode === 'replica') {
+      const ws = this.moveMode ? ['RESET'] : this.dataMode ? ['ERASE'] : ['MOVE', 'DATA'];
+      ws.forEach((w, i) => {
+        const x = W - 70 - i * 64, yy = H - 14;
+        c.textAlign = 'center'; c.fillStyle = T.text; c.fillText(w, x, yy);
+        this.words.push({ w, x, y: yy });
+      });
+      if (this.moveMode) {                        // the eight-pointed star
+        const cx = W - 70, cy = H - BOTTOM - 70;
+        c.strokeStyle = T.bright; c.lineWidth = 1.5;
+        STAR.forEach(([sx, sy]) => { const k = 34 / Math.hypot(sx, sy); this.line(cx, cy, cx + sx * k, cy + sy * k); });
+      }
+    } else if (this.hover && this.mouse) {
+      const b = this.hover, p = f.channel.received(b.d).num.indexOf(b.sym) + 1;
+      const tip = `node ${b.d}→${b.d + 1}   bit ${b.bit}   signal ${b.sym} (${p ? 'list position ' + p : 'not on list'})   metric ${b.dy > 0 ? '+' : ''}${b.dy} → ${b.y0 + b.dy}`;
+      const tw = c.measureText(tip).width + 16, tx = Math.min(W - tw - 6, Math.max(6, this.mouse[0] + 12)), tyy = Math.max(TOP + 12, this.mouse[1] - 22);
+      c.shadowBlur = 0; c.fillStyle = T.bg; c.globalAlpha = 0.92; c.fillRect(tx, tyy - 11, tw, 22); c.globalAlpha = 1;
+      c.strokeStyle = T.faint; c.lineWidth = 1; c.strokeRect(tx, tyy - 11, tw, 22);
+      c.fillStyle = T.text; c.textAlign = 'left'; c.fillText(tip, tx + 8, tyy);
+    }
+  }
+
+  nodeAt(f, px, py) {
+    let best = null, bd = 14;
+    for (const b of f.store.visible(this.view.x0 - 1, this.view.x0 + this.view.w + 1)) {
+      const dist = Math.hypot(this.X(b.d + 1) - px, this.Y(b.y0 + b.dy) - py);
+      if (dist < bd) { bd = dist; best = b; }
+    }
+    return best;
+  }
+  wordAt(px, py) { const w = this.words.find(k => Math.abs(k.x - px) < 28 && Math.abs(k.y - py) < 12); return w ? w.w : null; }
+  starTip(px, py) {
+    const cx = this.W - 70, cy = this.H - BOTTOM - 70, dx = px - cx, dy = py - cy;
+    if (Math.hypot(dx, dy) > 50 || Math.hypot(dx, dy) < 8) return null;
+    return STAR[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8];
+  }
+
+  // Light pen (Replica) or mouse (Workbench / Explainer)
+  attach(getF, getMode) {
+    const cv = this.cv, pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    let drag = null;
+    cv.addEventListener('pointerdown', e => {
+      const [x, y] = pos(e), f = getF(), replica = getMode() === 'replica';
+      cv.setPointerCapture(e.pointerId);
+      if (replica) {
+        const w = this.wordAt(x, y);
+        if (w === 'MOVE') { this.moveMode = true; return; }
+        if (w === 'RESET') { this.moveMode = false; this.drift = null; this.resetView(f); return; }
+        if (w === 'DATA') { this.dataMode = true; return; }
+        if (w === 'ERASE') { this.dataMode = false; this.inspect = null; return; }
+        if (this.moveMode) { this.drift = this.starTip(x, y); if (this.drift) return; }
+        if (this.dataMode && y < TOP + 8) { this.inspect = Math.max(0, Math.round(x / this.dx + this.view.x0)); return; }
+      }
+      this.pin = this.nodeAt(f, x, y);
+      if (!this.pin && !replica) drag = { x, y, x0: this.view.x0, yc: this.view.yc };
+    });
+    cv.addEventListener('pointermove', e => {
+      const [x, y] = pos(e), f = getF();
+      this.mouse = [x, y];
+      if (drag) {
+        this.follow = false;
+        this.view.x0 = drag.x0 - (x - drag.x) / this.dx;
+        this.view.yc = drag.yc + (y - drag.y) * 32 / this.dx;
+      } else if (getMode() !== 'replica') this.hover = this.nodeAt(f, x, y);
+      else if (this.drift) this.drift = this.starTip(x, y);
+    });
+    const up = () => { drag = null; this.pin = null; this.drift = null; };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('pointerleave', () => { this.hover = null; this.mouse = null; });
+    cv.addEventListener('dblclick', () => this.resetView(getF()));
+    cv.addEventListener('wheel', e => {
+      if (getMode() === 'replica') return;
+      e.preventDefault();
+      const [x] = pos(e), at = this.view.x0 + x / this.dx;
+      this.view.w = Math.max(8, Math.min(120, this.view.w * (e.deltaY > 0 ? 1.12 : 0.89)));
+      this.view.x0 = at - x / this.dx;
+    }, { passive: false });
+  }
+}
+
+// ---- app.js ----
+
+
+const $ = id => document.getElementById(id);
+const MODE_CFG = {
+  replica: { capacity: 512, radix: 8, w: 16 },      // 512 branches, octal, 16 nodes deep (p. 21)
+  workbench: { capacity: 6000, radix: 10, w: 26 },
+  explainer: { capacity: 6000, radix: 10, w: 20 },
+};
+
+// Fig. A-4, with the statement labels the decoder reports as it runs
+const LISTING = [
+  [[1], ' 1:', 'GENERATE 1 ; CALL FIND (POS, J, LI(N), 2, N, 0)', 'code the next branch; pick the LI-th most likely hypothesis'],
+  [[1], '', 'LT ← L + [LMBD(N) ← IDIST(POS)]', 'trial total = total so far + this branch’s metric'],
+  [[2], ' 2:', 'ENTER BRANCH ; IF [LT .L. IT] 11', 'below the threshold? then search'],
+  [[3], ' 3:', 'N ← N + 1', 'move forward one node'],
+  [[4], ' 4:', 'IF [FLAG .NE. 0] 8', 'retracing old ground?'],
+  [[5], ' 5:', 'IF [IT + IT0 .G. LT] 7', 'threshold already as tight as it can be?'],
+  [[6], ' 6:', 'IT ← IT + IT0 ; GO TO 5', 'tighten the threshold'],
+  [[7], ' 7:', 'L ← LT ; LI(N) ← 1 ; WAIT ; GO TO 1', 'accept the branch'],
+  [[8], ' 8:', 'IF [IT + IT0 .G. L] 10', 'did this move start less than IT0 above threshold…'],
+  [[9], ' 9:', 'IF [IT + IT0 .LE. LT] 7', '…or end there? then this node is new'],
+  [[10], '10:', 'CLEAR FLAG ; GO TO 5', 'new ground: tightening is allowed again'],
+  [[11], '11:', 'BEGIN SEARCH ; SET FLAG ; SHIFT LEFT 1', 'branch failed: undo it'],
+  [[12], '12:', 'IF [N .E. 0] 18', 'at the origin?'],
+  [[13], '13:', 'LB ← L − LMBD(N−1)', 'look back one node'],
+  [[14], '14:', 'IF [LB .L. IT] 18', 'is the node behind below the threshold too?'],
+  [[15], '15:', 'N ← N − 1 ; SHIFT LEFT 1 ; L ← LB ; WAIT', 'back up one node'],
+  [[16], '16:', 'IF [LI(N) .E. 2] 12', 'was that the worst branch here? keep backing up'],
+  [[17], '17:', 'LI(N) ← LI(N) + 1 ; GO TO 1', 'try the next most likely branch'],
+  [[18], '18:', 'IT ← IT − IT0', 'lower the threshold'],
+  [[19], '19:', 'LI(N) ← 1 ; GO TO 1', 'and search forward again, best branch first'],
+];
+
+let mode = 'explainer';
+try { mode = localStorage.getItem('scd-mode') || mode; } catch (e) { /* private window */ }
+if (!MODE_CFG[mode]) mode = 'explainer';
+
+const f = new Facility(MODE_CFG[mode]);
+const scope = new Scope($('scope'));
+const log = $('log'), cmd = $('cmd');
+let note = null;          // a caption that outranks the per-step one (e.g. after "Find a search")
+
+function tty(line) {
+  log.textContent += (log.textContent ? '\n' : '') + line;
+  const lines = log.textContent.split('\n');
+  if (lines.length > 300) log.textContent = lines.slice(-300).join('\n');
+  log.scrollTop = log.scrollHeight;
+}
+f.onPrint = tty;
+
+function submit(text) {
+  tty('*' + text.toUpperCase());
+  const wasN = f.dec.N;
+  f.exec(text);
+  note = null;
+  if (Math.abs(f.dec.N - wasN) > scope.view.w || /^RES|^REP|^DDT/i.test(text.trim())) scope.resetView(f);
+  if (/^RUN|^G$|^STEPS|^GO/i.test(text.trim())) scope.follow = true;
+  sync();
+}
+
+function setMode(m) {
+  mode = m;
+  document.body.dataset.mode = m;
+  try { localStorage.setItem('scd-mode', m); } catch (e) { /* ignore */ }
+  document.querySelectorAll('[data-set-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.setMode === m)));
+  const c = MODE_CFG[m];
+  f.cfg.capacity = f.store.capacity = c.capacity;
+  f.cfg.radix = c.radix;
+  scope.view.w = c.w;
+  scope.moveMode = scope.dataMode = false; scope.inspect = null; scope.hover = null;
+  cmd.placeholder = m === 'replica' ? '' : 'monitor command — try HELP';
+  requestAnimationFrame(() => { scope.resize(); scope.resetView(f); drawCharts(); });
+  if (m === 'replica') cmd.focus();
+}
+
+// ---- side panel -----------------------------------------------------------------------------
+const SPEED_LABEL = ['2 s / step', '1 s', '½ s', '¼ s', '⅛ s', '1⁄16 s', '1⁄32 s', 'fast, display off'];
+function sync() {
+  $('btnRun').textContent = f.running ? 'Stop' : 'Run';
+  $('rngSpeed').value = f.speed; $('outSpeed').textContent = SPEED_LABEL[f.speed];
+  $('chkDisplay').checked = f.mode === 1; $('chkOthers').checked = !!f.others;
+  $('rngSnr').value = f.cfg.snr; $('outSnr').textContent = f.cfg.snr.toFixed(1);
+  $('rngIt0').value = f.cfg.it0; $('outIt0').textContent = f.cfg.it0;
+  $('selMsg').value = f.cfg.message.toUpperCase(); $('numSeed').value = f.cfg.seed;
+}
+$('btnRun').onclick = () => submit(f.running ? 'STOP' : 'RUN');
+$('btnStep').onclick = () => submit('G');
+$('btnRepeat').onclick = () => submit('REPEAT');
+$('btnReset').onclick = () => submit('RESET');
+$('btnExit').onclick = () => submit('EXIT');
+$('rngSpeed').oninput = e => submit('SPEED=' + e.target.value);
+$('chkDisplay').onchange = e => submit(e.target.checked ? 'MODE1' : 'MODE0');
+$('chkOthers').onchange = e => submit('OTHERS=' + (e.target.checked ? 1 : 0));
+$('rngSnr').oninput = e => { $('outSnr').textContent = (+e.target.value).toFixed(1); };
+$('rngSnr').onchange = e => submit('DDT SN=' + (+e.target.value).toFixed(1));
+$('rngIt0').oninput = e => { $('outIt0').textContent = e.target.value; };
+$('rngIt0').onchange = e => submit('DDT IT0=' + e.target.value);
+$('selMsg').onchange = e => submit('DDT MSG=' + e.target.value);
+$('numSeed').onchange = e => submit('DDT SEED=' + Math.max(1, Math.floor(+e.target.value || 1)));
+$('btnFind').onclick = () => {
+  tty('*(FIND A SEARCH: MODE0, RUN, RESTART BEFORE IT, SPEED=2)');
+  const r = f.findSearch(3);
+  if (!r) { note = 'No search three nodes deep turned up in the next stretch of data — the channel is too quiet. Try a lower signal-to-noise ratio.'; sync(); return; }
+  f.speed = 2;
+  note = `Found a search that begins at node ${r.n0}. ` + (r.wrongTurn >= 0
+    ? `Noise made a wrong branch look better at node ${r.wrongTurn}, and the decoder took it. `
+    : 'The decoder never left the right path — a burst of noise simply dragged the correct path under the threshold. ')
+    + `Rewound to node ${r.from} using saved restart data; now replaying it slowly. Watch the total sink toward the threshold line.`;
+  tty('RESTARTED AT N = ' + r.from);
+  scope.resetView(f); f.run(); sync();
+};
+document.querySelectorAll('[data-set-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.setMode); });
+
+cmd.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && cmd.value.trim()) { submit(cmd.value); cmd.value = ''; }
+});
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
+  if (mode === 'replica') { if (!typing && e.key.length === 1) cmd.focus(); return; }
+  if (typing) return;
+  if (e.key === ' ') { e.preventDefault(); submit(f.running ? 'STOP' : 'RUN'); }
+  if (e.key === 'g' || e.key === 'G') submit('G');
+});
+
+const listing = $('listing');
+LISTING.forEach(([pcs, label, code, gloss]) => {
+  const div = document.createElement('div');
+  div.dataset.pc = pcs.join(',');
+  div.innerHTML = `<i>${label}</i><span>${code}</span><small>${gloss}</small>`;
+  listing.appendChild(div);
+});
+
+// ---- Explainer captions ---------------------------------------------------------------------
+const signed = n => (n > 0 ? '+' : '') + n;
+function captionFor(ev) {
+  const t = f.tentative, b = ev.boxes, ord = ['', 'most likely', 'second most likely'];
+  let s = '';
+  if (ev.kind === 'enter') {
+    const where = t.pos <= 4 ? `number ${t.pos} on the receiver’s list of likely signals` : 'not on the receiver’s list at all';
+    s = `At node ${ev.N}, try the ${ord[t.li]} branch: information bit ${t.bit}, which the coder turns into signal ${t.sym}. `
+      + `That signal is ${where}, so the branch scores ${signed(t.dy)}. `
+      + (t.fail ? `The total would fall to ${ev.LT}, under the threshold of ${ev.IT} — rejected.` : `The total, ${ev.LT}, stays above the threshold of ${ev.IT} — accepted.`);
+  } else if (ev.kind === 'advance') {
+    s = `Moved forward to node ${ev.N}. ` + (b.includes(6)
+      ? `This is new ground, so the threshold is tightened to ${ev.IT}, just under the running total of ${ev.L}.`
+      : ev.FLAG ? `The threshold stays at ${ev.IT}: the decoder has been through here before, and may not tighten again until it reaches a node it has never seen.`
+        : `The threshold stays at ${ev.IT}.`);
+  } else if (ev.kind === 'retreat') {
+    s = (b[0] === 16 && b[1] === 12 ? `Both branches from node ${ev.N + 1} have now failed. ` : '')
+      + `Backed up to node ${ev.N}. It sits above the threshold, so a branch not yet tried from here might still succeed.`;
+  } else {
+    s = `Every way forward dips under the threshold, and ${b.includes(14) ? 'the node behind is under it too' : 'there is nowhere to back up to'}. `
+      + `So relax: lower the threshold by ${f.dec.IT0} to ${ev.IT}, and search forward again from node ${ev.N}, best branch first.`;
+  }
+  let truth = 'Truth: still on the correct path.', off = false;
+  if (f.offPath >= 0) { truth = `Truth, hidden from the decoder: it left the correct path at node ${f.offPath}.`; off = true; }
+  else if (t && !t.correct) { truth = 'Truth, hidden from the decoder: this branch is a wrong turn' + (t.fail ? '.' : ' — and it looks perfectly good.'); off = true; }
+  return `${s}<span class="truth${off ? ' off' : ''}">${truth}</span>`;
+}
+
+let shownEvent = null;
+function narrate() {
+  const ev = f.lastEvent, cap = $('caption');
+  if (f.fast && f.running) { cap.innerHTML = `Running at full speed with the display off — ${f.maxN.toLocaleString()} nodes decoded. The histograms are filling in.`; shownEvent = null; return; }
+  if (ev === shownEvent && !note) return;
+  shownEvent = ev;
+  if (note && (!ev || ev.kind !== 'lower' && !f.stats.inSearch)) { cap.innerHTML = note; }
+  else if (ev) { cap.innerHTML = captionFor(ev); note = null; }
+  else cap.innerHTML = 'Each line segment is one guess at one transmitted bit. A guess that fits the noisy received signal climbs; a poor fit drops steeply. '
+    + 'The decoder pushes forward along the best-looking branch while the total stays above a threshold, and backs up to try the alternatives when it does not. Press <b>Run</b>, or <b>Find a search</b> to jump to the interesting part.';
+  const on = new Set(ev ? ev.boxes : []), last = ev ? ev.boxes[ev.boxes.length - 1] : -1;
+  for (const div of listing.children) {
+    const pcs = div.dataset.pc.split(',').map(Number);
+    div.classList.toggle('on', pcs.some(p => on.has(p)));
+    div.classList.toggle('now', pcs.includes(last));
+  }
+}
+
+// ---- readouts and histograms ----------------------------------------------------------------
+function readouts() {
+  const d = f.dec, st = f.stats;
+  const rows = [['Node depth N', d.N], ['Total metric L', d.L], ['Threshold IT', d.IT], ['FLAG', d.FLAG],
+    ['Computations / node', (d.ICOUNT / Math.max(1, f.maxN)).toFixed(2)], ['Searches', st.searches],
+    ['Search depth now', st.searchDepth], ['Waiting line', st.waitingLine],
+    ['Bit errors', f.errors], ['Branches stored', f.store.count]];
+  $('readouts').innerHTML = rows.map(([k, v]) => `<div>${k}<b>${v.toLocaleString ? v.toLocaleString() : v}</b></div>`).join('');
+}
+
+function plot(cv, pts, { logx, xmax, xlabel }) {
+  const dpr = window.devicePixelRatio || 1, W = 300, H = +(cv.dataset.h || (cv.dataset.h = cv.getAttribute('height')));
+  if (+cv.dataset.dpr !== dpr) { cv.dataset.dpr = dpr; cv.width = W * dpr; cv.height = H * dpr; }
+  const c = cv.getContext('2d'), T = THEMES[mode === 'replica' ? 'workbench' : mode];
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  const L = 34, B = 18, R = 6, Tp = 6, ymax = Math.max(10, ...pts.map(p => p[1]));
+  const decades = Math.ceil(Math.log10(ymax));
+  const X = x => L + (logx ? Math.log(x) / Math.log(xmax) : x / xmax) * (W - L - R);
+  const Y = y => H - B - Math.log10(Math.max(1, y)) / decades * (H - B - Tp);
+  c.font = '10px "IBM Plex Mono", monospace'; c.fillStyle = T.faint; c.strokeStyle = T.thr === '#ece8dc' ? '#e6e1d3' : 'rgba(255,255,255,0.08)'; c.lineWidth = 1;
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  for (let k = 0; k <= decades; k++) { const y = Y(10 ** k); c.beginPath(); c.moveTo(L, y); c.lineTo(W - R, y); c.stroke(); c.fillText(k < 4 ? String(10 ** k) : '1e' + k, L - 4, y); }
+  c.textAlign = 'center'; c.textBaseline = 'top';
+  (logx ? [1, 2, 5, 10, 20] : [0, xmax / 4, xmax / 2, 3 * xmax / 4, xmax]).forEach(x => c.fillText(String(x), X(Math.max(x, logx ? 1 : 0)), H - B + 4));
+  c.textAlign = 'right'; c.fillText(xlabel, W - R, H - B + 4);
+  if (!pts.length) return;
+  c.strokeStyle = T.bright; c.lineWidth = 1.6; c.beginPath();
+  pts.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y))));
+  c.stroke();
+}
+function drawCharts() {
+  const tail = f.stats.depthTail(), a = [], w = [];
+  for (let n = 1; n <= 30 && tail[n] > 0; n++) a.push([n, tail[n]]);
+  plot($('chTail'), a, { logx: true, xmax: 30, xlabel: 'N' });
+  let hi = 8; f.stats.waitHist.forEach((v, i) => { if (v && i > hi) hi = i; });
+  const xmax = Math.ceil(hi / 8) * 8;
+  for (let i = 0; i <= xmax; i++) if (f.stats.waitHist[i]) w.push([i, f.stats.waitHist[i]]);
+  plot($('chWait'), w, { logx: false, xmax, xlabel: 'bauds waiting' });
+}
+
+// ---- clock ----------------------------------------------------------------------------------
+let last = performance.now(), lastSlow = 0, wasRunning = false;
+function frame(ts) {
+  const dt = Math.min(100, ts - last); last = ts;
+  f.pump(dt);
+  if (f.running !== wasRunning) { wasRunning = f.running; sync(); }
+  scope.track(f, f.speed >= 5);
+  scope.draw(f, mode);
+  if (mode === 'explainer') narrate();
+  if (ts - lastSlow > 200 && mode !== 'replica') { lastSlow = ts; readouts(); drawCharts(); }
+  requestAnimationFrame(frame);
+}
+
+scope.attach(() => f, () => mode);
+window.addEventListener('resize', () => scope.resize());
+setMode(mode);
+sync();
+tty('SEQ. DECODING SYSTEM   PDP-6 / PROJECT MAC   (RE-IMPLEMENTED)');
+tty('CONSTRAINT IS 60   LIST LENGTH IS 4   BITS PER BRANCH = 1   8 ORTHOGONAL SIGNALS, WHITE GAUSSIAN NOISE');
+tty('READY');
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>

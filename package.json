@@ -1,0 +1,6 @@
+{
+  "name": "dad-scd",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test", "build": "node build.mjs" }
+}
