@@ -4,7 +4,11 @@ A working re-implementation of the system in Charles W. Niessen's 1965 MIT Sc.D.
 *An Experimental Facility for Sequential Decoding* (RLE TR 450 / Lincoln Lab TR 396): the Fano
 sequential decoder of Fig. A-4 and the interactive tree display of Sec. III-B, as a single web page.
 
-**Open `index.html`** in any browser. No install, no server.
+**Live:** https://pniessen.github.io/sequential-decoder/ — or open `index.html` in any browser. No install, no server.
+
+**The thesis:** [PDF](https://ntrs.nasa.gov/api/citations/19660019223/downloads/19660019223.pdf) (79 pages, 4.5 MB) ·
+[NASA Technical Reports Server record 19660019223](https://ntrs.nasa.gov/citations/19660019223).
+Page numbers cited in this README and in the source comments are the report's own.
 
 ## Three modes
 
