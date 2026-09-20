@@ -15,12 +15,23 @@ export class TreeStore {
     let loop = this.loops.get(d);
     if (!loop) { loop = []; this.loops.set(d, loop); if (d < this.minDepth) this.minDepth = d; }
     for (const b of loop) {
-      if (b.y0 === y0 && b.bit === bit && b.parent === parent) { if (!other) b.other = false; return b; }
+      if (b.y0 === y0 && b.bit === bit && b.parent === parent) {
+        this.last = { b, isNew: false, wasOther: b.other };      // what this call changed, so a step can be undone
+        if (!other) b.other = false;
+        return b;
+      }
     }
     const b = { d, y0, dy, bit, sym, parent, correct, other };
     loop.push(b); this.count++;
+    this.last = { b, isNew: true, wasOther: other };
     while (this.count > this.capacity && this.minDepth < d) this.dropLoop(this.minDepth);
     return b;
+  }
+  remove(b) {
+    const loop = this.loops.get(b.d), i = loop ? loop.indexOf(b) : -1;
+    if (i < 0) return;
+    loop.splice(i, 1); this.count--;
+    if (!loop.length) this.dropLoop(b.d);
   }
   dropLoop(d) {
     const loop = this.loops.get(d);

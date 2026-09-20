@@ -74,7 +74,9 @@ test('restart reproduces the trajectory exactly', () => {
 test('B steps back; stepping forward again replays the same decisions', () => {
   const f = new Facility({ ISDM: 0, IWLM: 0 });
   runTo(f, 60);
-  const sig = () => [f.dec.N, f.dec.L, f.dec.IT, f.dec.FLAG, f.dec.pc, f.dec.coder.a, f.dec.coder.b, f.stats.moves, f.offPath].join();
+  f.exec('OTHERS=1');
+  const sig = () => [f.dec.N, f.dec.L, f.dec.IT, f.dec.FLAG, f.dec.pc, f.dec.coder.a, f.dec.coder.b, f.stats.moves, f.offPath,
+    f.store.count, [...f.store.visible(0, 1e4)].filter(b => b.other).length].join();   // the display's branches are undone too
   const seen = [sig()];
   for (let i = 0; i < 40; i++) { f.stepOnce(); seen.push(sig()); }
   for (let i = 39; i >= 15; i--) { f.exec('B'); assert.equal(sig(), seen[i]); }

@@ -56,6 +56,7 @@ function submit(text) {
   const wasN = f.dec.N;
   f.exec(text);
   note = null;
+  if (/^B$/i.test(text.trim())) scope.hover = scope.pin = null;      // the branch under the pointer may just have been undone
   if (Math.abs(f.dec.N - wasN) > scope.view.w || /^RES|^REP|^DDT/i.test(text.trim())) scope.resetView(f);
   if (/^RUN|^G$|^B$|^STEPS|^GO/i.test(text.trim())) scope.follow = true;
   sync();

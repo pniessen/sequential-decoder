@@ -88,12 +88,18 @@ export class Facility {
     this.dec.restore(h.dec);
     this.stats = h.stats;
     Object.assign(this, h.misc);
+    for (const u of h.undo) {                        // clear from the display what the undone step drew
+      if (u.isNew) this.store.remove(u.b); else u.b.other = u.wasOther;
+    }
+    if (h.path) this.pathBranch[h.path.k] = h.path.prev;
     return true;
   }
 
   stepOnce() {
+    let hist = null;
     if (this.mode === 1 && !(this.speed === 7 && this.running)) {     // watching, not racing: remember how to get back
-      this.history.push({
+      this.history.push(hist = {
+        undo: [], path: null,
         dec: this.dec.snapshot(), stats: this.stats.clone(),
         misc: { maxN: this.maxN, errors: this.errors, offPath: this.offPath, lastOffPath: this.lastOffPath, tentative: this.tentative,
           lastEvent: this.lastEvent, lastEnter: this.lastEnter, haltedSearch: this.haltedSearch, haltedWait: this.haltedWait },
@@ -111,11 +117,14 @@ export class Facility {
       if (this.mode === 1) {
         let parent = ev.N > 0 ? this.pathBranch[(ev.N - 1) & 255] : null;
         if (parent && (parent.d !== ev.N - 1 || parent.y0 + parent.dy !== ev.L)) parent = null;
+        if (hist) hist.path = { k, prev: this.pathBranch[k] };
         this.pathBranch[k] = this.store.add(ev.N, ev.L, ev.LT - ev.L, bit, sym, parent, correct);
+        if (hist) hist.undo.push(this.store.last);
         if (this.others) {                      // OTHERT(j) <- IDIST[XPFINDF(GEN(j), N)] ; CALL CHANGE
           const jo = 1 - bit, so = d.coder.gen[jo];
           this.store.add(ev.N, ev.L, this.idist[d.xpfindf(so, ev.N) - 1], jo, so, parent,
             this.offPath < 0 && jo === ch.msgBit(ev.N), true);
+          if (hist) hist.undo.push(this.store.last);
         }
       }
     } else {
