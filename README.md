@@ -22,9 +22,18 @@ Page numbers cited in this README and in the source comments are the report's ow
   **Find a search**: run fast with the display off until a search occurs, restart just before it
   from saved restart data, and replay it slowly (the procedure recommended on p. 24).
 
-**Guided tour** (button at the top right, any mode): an 18-stop, three-minute walk-through that shades the page
+**Guided tour** (button at the top right, any mode): a 19-stop, three-minute walk-through that shades the page
 around one feature at a time, magnifies the small details on the scope with a live ×2 lens, and drives the decoder
 so each stop is a demonstration — including finding and replaying a wrong turn and re-creating Fig. 6. ← → to move, Esc to end.
+
+**Worksheet** (under the scope, all modes): the arithmetic behind every accept / fail decision, in the program's own
+variable names — signal → list position → λ = IDIST(pos) (with the p. 29 formula it comes from) → LT = L + λ → LT ≥ IT? —
+followed by what happened next (threshold raised, back up, threshold lowered). The scope's vertical axis is labelled
+(total metric L, with threshold-level values) and the label persists while running.
+
+**Glossary** (button beside it): searchable plain-language definitions of about 50 terms, from *shift register* and
+*metric* to *R-comp* and *light pen*, cross-linked, each noting where to see the thing on the page. Link straight to an
+entry with a hash, e.g. `…/sequential-decoder/#g-shift-register`.
 
 Hover over (or keyboard-focus) any control, readout, chart, legend entry, or region of the scope —
 threshold lines, register bits, ordered list, GEN table — for an explanation of what it is and why it matters.

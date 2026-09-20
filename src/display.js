@@ -71,6 +71,12 @@ export class Scope {
     c.shadowColor = T.glow || 'transparent'; c.shadowBlur = T.glow ? 6 : 0;
     this.words = [];
 
+    // vertical axis title - drawn first so it persists even while the display program is off
+    c.save(); c.translate(11, TOP + (H - TOP - BOTTOM) / 2 - 20); c.rotate(-Math.PI / 2);
+    c.textAlign = 'center'; c.fillStyle = mode === 'replica' ? T.text : T.faint;
+    c.fillText(mode === 'replica' ? 'TOTAL METRIC  L  \u2192' : 'total metric L (running score) \u2192', 0, 0);
+    c.restore();
+
     if (f.fast && f.running) {               // display program not running
       c.fillStyle = T.text; c.textAlign = 'left'; c.fillText('RUN', 12, H - 14);
       c.textAlign = 'right'; c.fillText(String(d.N), W - 12, H - 14);
@@ -81,9 +87,13 @@ export class Scope {
     // threshold lines, the running threshold brighter
     const it0 = d.IT0, half = (H - TOP - BOTTOM) / 2 * 32 / this.dx;
     c.lineWidth = 1;
+    const listTop = (this.layout ? this.layout.ty : H - 110) - 40;
+    c.textAlign = 'left';
     for (let t = Math.ceil((v.yc - half) / it0) * it0; t <= v.yc + half; t += it0) {
+      const yy = this.Y(t);
+      if (yy > TOP + 14 && yy < listTop && it0 * this.dx / 32 >= 16) { c.fillStyle = t === d.IT ? T.thrHi : T.faint; c.fillText(String(t), 24, yy - 8); }   // axis values
       if (t === d.IT) continue;
-      c.strokeStyle = T.thr; this.line(0, this.Y(t), W, this.Y(t));
+      c.strokeStyle = T.thr; this.line(0, yy, W, yy);
     }
     c.strokeStyle = T.thrHi; c.lineWidth = 1.5; this.line(0, this.Y(d.IT), W, this.Y(d.IT));
     if (mode !== 'replica') { c.fillStyle = T.thrHi; c.textAlign = 'right'; c.fillText('threshold ' + d.IT, W - 8, this.Y(d.IT) - 9); }
@@ -218,6 +228,7 @@ export class Scope {
         ERASE: 'Remove the dots and go back to showing the ordered list for the current node.' }[this.wordAt(px, py)];
     }
     if (this.moveMode && this.starTip(px, py)) return 'Hold the pointer on a tip of the star: the tree drifts in that direction for as long as you hold. RESET returns to the decoder’s position.';
+    if (px < 22 && py > TOP && py < H - BOTTOM - 130) return 'The vertical axis: the total metric L — the running score of the path, in the program’s integer units (10 units = 1 bit of log-likelihood). The small numbers are the values of the threshold levels, IT0 apart. Depth in the tree runs left to right.';
     if (py < 23) return 'The contents of the coder’s shift register: the information bit the decoder has guessed for each branch of the current path, written above that branch. The register really holds the last 60 of them — every new channel signal depends on all 60, which is what makes a wrong turn show up sooner or later.';
     if (py < TOP) return (this.dataMode ? 'Touch a dot to show the ordered list for that node. ' : '') + 'The channel signal number (0–7' + (oct ? ', octal' : '') + ') the coder assigns to each branch of the current path: the information bit followed by two parity checks on the shift register (SEQUENCE 1 (S, I, P1, P2)). One of 8 orthogonal waveforms is sent per bit.';
     if (L && px < L.gx - 8 && py > L.ty - 26 && py < L.ty + L.rows * 15) return `The receiver’s ordered list for node ${L.at}: the 4 of its 8 matched-filter outputs that were largest, most likely first. Left column is the voltage as a 10-bit converter reading${oct ? ' (octal)' : ''}, right column the signal number. The decoder never sees more than this about each received signal (Sec. II-E). A branch scores +17 if its signal is first on the list, −13, −29 or −41 if lower, and −64 if it is not on the list at all.`;

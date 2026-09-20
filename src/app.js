@@ -1,6 +1,7 @@
 import { Facility } from './facility.js';
 import { Scope, THEMES } from './display.js';
 import { Tour } from './tour.js';
+import { initGlossary } from './glossary.js';
 
 const $ = id => document.getElementById(id);
 const MODE_CFG = {
@@ -119,6 +120,7 @@ const tour = new Tour({
   onEnd() { try { localStorage.setItem('scd-toured', '1'); } catch (e) { /* ignore */ } $('btnTour').classList.remove('nudge'); $('btnTour').focus(); },
 });
 $('btnTour').onclick = () => { hideTip(); tour.start(); };
+initGlossary($('btnGlossary'));
 try { if (!localStorage.getItem('scd-toured')) $('btnTour').classList.add('nudge'); } catch (e) { $('btnTour').classList.add('nudge'); }
 document.querySelectorAll('[data-set-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.setMode); });
 
@@ -128,7 +130,7 @@ cmd.addEventListener('keydown', e => {
 document.addEventListener('keydown', e => {
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
   if (mode === 'replica') { if (!typing && e.key.length === 1) cmd.focus(); return; }
-  if (typing || tour.active) return;
+  if (typing || tour.active || document.querySelector('dialog[open]')) return;
   if (e.key === ' ') { e.preventDefault(); submit(f.running ? 'STOP' : 'RUN'); }
   if (e.key === 'g' || e.key === 'G') submit('G');
 });
@@ -185,6 +187,45 @@ function narrate() {
     div.classList.toggle('on', pcs.some(p => on.has(p)));
     div.classList.toggle('now', pcs.includes(last));
   }
+}
+
+// ---- the worksheet: how accept / fail is being calculated, step by step ----------------------
+const ORD = ['', '1st', '2nd'], sgn = n => (n >= 0 ? '+ ' : '\u2212 ') + Math.abs(n), neg = n => String(n).replace('-', '\u2212');
+let mathBranch = null, mathEvent;
+function worksheet() {
+  const ev = f.lastEvent, el = $('math'), d = f.dec;
+  if (f.fast && f.running) { if (mathEvent !== 'fast') { mathEvent = 'fast'; el.innerHTML = '<div><b>DISPLAY OFF</b><span>running at full speed — STOP or a slower SPEED shows the arithmetic again</span></div>'; } return; }
+  if (ev === mathEvent) return;
+  mathEvent = ev;
+  if (!ev) { mathBranch = null; el.innerHTML = '<div><b>WORKSHEET</b><span>the arithmetic behind each accept / fail decision appears here as the decoder runs</span></div>'; return; }
+  const row = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><b>${k}</b><span>${v}</span></div>`;
+  if (ev.kind === 'enter') {
+    const t = f.tentative, g = d.coder.gen, l = f.channel.listLen, q = f.q[t.pos - 1];
+    const formula = t.pos <= l ? `10 × [log₂(8 × ${q.toFixed(3)}) − 1]` : `10 × [log₂(8 × ${q.toFixed(3)} ÷ ${8 - l}) − 1]`;
+    mathBranch = row('BRANCH', `node N = ${ev.N}: try the ${ORD[t.li]} choice, bit J = ${t.bit} → signal GEN(${t.bit}) = ${t.sym} <i>(GEN: 0 → ${g[0]}, 1 → ${g[1]})</i>`)
+      + row('METRIC', `signal ${t.sym} is ${t.pos <= l ? `no. ${t.pos} on` : 'not on'} the receiver’s list → λ = IDIST(${t.pos}) = <em>${neg(t.dy)}</em> <i>≈ ${formula}, where ${q.toFixed(3)} = chance the true signal lands there</i>`)
+      + row('TOTAL', `LT = L + λ = ${neg(ev.L)} ${sgn(t.dy)} = <em>${neg(ev.LT)}</em>`)
+      + row('TEST', `LT ≥ IT ?  ${neg(ev.LT)} ${t.fail ? '&lt;' : '≥'} ${neg(ev.IT)} → <em>${t.fail ? 'FAIL' : 'ACCEPT'}</em>`, t.fail ? 'bad' : 'good');
+    el.innerHTML = mathBranch + row('THEN', '…');
+    return;
+  }
+  let then;
+  if (ev.kind === 'advance') {
+    const raised = ev.boxes.filter(b => b === 6).length * d.IT0;
+    then = `N ← ${ev.N}, L ← ${neg(ev.L)}.  Threshold: ` + (raised
+      ? `raise while IT + IT0 ≤ LT:  ${neg(ev.IT - raised)} → <em>${neg(ev.IT)}</em> <i>(${neg(ev.IT)} + ${d.IT0} &gt; ${neg(ev.L)}, so it stops there)</i>`
+      : ev.FLAG ? `held at ${neg(ev.IT)} <i>— FLAG = 1: re-tracing old ground, no raising until a new node is reached</i>`
+        : `stays ${neg(ev.IT)} <i>(${neg(ev.IT)} + ${d.IT0} &gt; ${neg(ev.L)}: no room to raise it)</i>`);
+  } else if (ev.kind === 'retreat') {
+    const lam = d.LMBD[ev.N & 255];
+    then = `look back: LB = L − λ(N−1) = ${neg(ev.L + lam)} ${sgn(-lam)} = ${neg(ev.L)};  LB ≥ IT ?  ${neg(ev.L)} ≥ ${neg(ev.IT)} → <em>back up to node ${ev.N}</em>`
+      + (d.LI[ev.N & 255] === 2 ? ' <i>— both branches here already tried: keep looking back</i>' : ' <i>— try its 2nd choice next</i>');
+  } else {
+    const old = ev.IT + d.IT0;
+    then = (ev.boxes.includes(14) ? `look back: LB = ${neg(ev.L)} ${sgn(-d.LMBD[(ev.N - 1) & 255])} = ${neg(ev.L - d.LMBD[(ev.N - 1) & 255])} &lt; IT = ${neg(old)}, so no retreat is possible` : 'at the origin: nowhere to back up to')
+      + ` → lower threshold: IT ← IT − IT0 = ${neg(old)} − ${d.IT0} = <em>${neg(ev.IT)}</em>`;
+  }
+  el.innerHTML = (mathBranch || '') + row('THEN', then);
 }
 
 // ---- readouts and histograms ----------------------------------------------------------------
@@ -291,6 +332,7 @@ function frame(ts) {
   if (f.running !== wasRunning) { wasRunning = f.running; sync(); }
   scope.track(f, f.speed >= 5);
   scope.draw(f, mode);
+  worksheet();
   if (mode === 'explainer') narrate();
   tour.frame();
   if (ts - lastSlow > 200 && mode !== 'replica') { lastSlow = ts; readouts(); drawCharts(); }

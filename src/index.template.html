@@ -18,6 +18,7 @@
   </div>
   <nav>
   <button id="btnTour" data-tip="A three-minute guided tour. It spotlights each part of the page in turn, magnifies the small details on the scope, and drives the decoder so you can watch each idea in action. Arrow keys move between stops; Esc ends it.">Guided tour</button>
+  <button id="btnGlossary" data-tip="Plain-language definitions of every term used on this page and in the thesis — shift register, metric, threshold, R-comp, ordered list, light pen and the rest — with links between related terms and a note of where to see each one here.">Glossary</button>
   <div class="modes" role="tablist" aria-label="Mode">
     <button role="tab" data-set-mode="replica" data-tip="Replica: the facility as it was in 1965. A phosphor scope showing 16 nodes of the tree, a teletype for typed commands, numbers in octal, room for 512 branches. No buttons — type HELP. Click the words MOVE and DATA on the scope as you would touch them with the light pen.">Replica</button>
     <button role="tab" data-set-mode="workbench" data-tip="Workbench: the same decoder, display and commands, with modern conveniences — buttons and sliders, live histograms, drag to pan, scroll to zoom, hover over a branch to inspect it. Every button prints the monitor command it stands for on the teletype below.">Workbench</button>
@@ -29,10 +30,11 @@
 <main>
   <section class="scopewrap">
     <canvas id="scope" aria-label="Tree display: metric versus depth. Left to right is depth in the tree, one transmitted bit per step; height is the running score of how well the path fits the received signal."></canvas>
+    <div id="math" aria-live="off" data-tip="The decoder’s arithmetic for the step just taken, in the program’s own variable names. Every branch gets a metric λ from where its signal sits on the receiver’s ordered list (the IDIST table — itself 10 × [log₂(8 × probability) − 1], the formula on p. 29 of the thesis). That is added to the running total L to give the trial total LT, and the branch is accepted only if LT is at or above the threshold IT. The last line shows what happened next: threshold raised, back up, or threshold lowered."></div>
     <div class="legend only-explainer">
       <span data-tip="The decoder’s current best guess at the transmitted message, from the start of the tree to the node it is standing on (the dot). The 1965 display drew this path brighter than everything else."><i class="sw bright"></i>path being searched</span>
       <span data-tip="Branches the decoder tried earlier and abandoned, or backed out of. They stay on the display so you can see the shape of a search — short stubs hanging down are second-best guesses that failed immediately."><i class="sw dim"></i>branches already searched</span>
-      <span data-tip="Branches that do not match the message actually sent. We know this only because the simulation knows the message; the decoder has nothing but the noisy signal, and finds out the hard way — a wrong path’s score soon starts falling about three times faster than a right one climbs."><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
+      <span data-tip="Branches that do not match the message actually sent. We know this only because the simulation knows the message; the decoder has nothing but the noisy signal, and finds out the hard way — a wrong path’s score soon starts falling about twice as fast as a right one climbs."><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
       <span data-tip="The bar the running score must stay above. It ratchets up in steps of IT0 as the decoder makes progress on new ground, and is lowered one step when every available path falls below it. This one line is what makes the Fano algorithm work with almost no memory."><i class="sw thr"></i>running threshold</span>
     </div>
     <div id="caption" class="only-explainer" aria-live="polite" data-tip="A plain-language account of the step the decoder just took. The last line tells you the truth about whether it is on the right path — information the decoder does not have."></div>

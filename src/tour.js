@@ -33,6 +33,11 @@ const TOUR_STEPS = api => [
     enter: () => { api.cmd('STOP'); api.stepToBranch(); },
   },
   {
+    target: '#math', title: 'The arithmetic, step by step',
+    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Press <b>Step</b> (or the G key after the tour) to go one decision at a time.',
+    enter: () => { api.cmd('STOP'); api.stepToBranch(); },
+  },
+  {
     region: 'all', title: 'A wrong turn',
     body: 'Now the interesting part. The decoder has just run ahead with the display off, found a place where noise sent it into trouble, rewound using saved restart data, and is replaying it slowly — exactly the procedure the thesis recommends. Watch the score sink to the threshold, the decoder back up and try second-best branches (the stubs that hang down), and finally recover. <b>Orange</b> marks branches off the true path — something only we can see. Give it fifteen seconds.',
     enter: () => api.find(),
@@ -88,7 +93,7 @@ const TOUR_STEPS = api => [
   },
   {
     target: 'header nav', title: 'That’s the tour',
-    body: 'Switch modes here at any time, or take the tour again. A good next step: <b>Explainer → Find a search</b>, then press <b>Step</b> and read each caption. The thesis itself is linked at the top of the page.',
+    body: 'Switch modes here at any time, or take the tour again. A good next step: <b>Explainer → Find a search</b>, then press <b>Step</b> and read each caption. Any unfamiliar word is in the <b>Glossary</b>, and the thesis itself is linked at the top of the page.',
     enter: () => { api.cmd('STOP'); api.cmd('OTHERS=0'); api.setMode('explainer'); },
   },
 ];

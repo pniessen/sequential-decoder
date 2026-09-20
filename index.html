@@ -138,6 +138,45 @@ body[data-mode="replica"] #tourCard h3 { font: 500 14px var(--mono); text-transf
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { #btnTour.nudge { animation: none; } }
 
+#glossary { width: min(780px, calc(100vw - 24px)); height: min(86vh, 900px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--ink);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.5); overflow: hidden; }
+#glossary[open] { display: flex; flex-direction: column; }
+#glossary::backdrop { background: rgba(8, 10, 14, 0.6); }
+#glossary .ghead { display: flex; gap: 12px; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+#glossary h2 { margin: 0; font: 500 19px var(--serif); }
+#glossary input { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 14px var(--sans); }
+#glossary .x { border: 0; background: none; font-size: 22px; line-height: 1; padding: 4px 8px; color: var(--muted); }
+#glossary .gbody { overflow-y: auto; padding: 4px 18px 22px; scroll-padding-top: 40px; }
+#glossary h3 { position: sticky; top: 0; margin: 0 -18px; padding: 12px 18px 6px; background: var(--panel); font: 600 11.5px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+#glossary dl { margin: 0; }
+#glossary .gterm { display: grid; grid-template-columns: 170px 1fr; gap: 4px 16px; padding: 10px 8px; margin: 0 -8px; border-radius: 8px; border-top: 1px solid var(--line); }
+#glossary section .gterm:first-child { border-top: 0; }
+#glossary dt { font: 500 14.5px/1.4 var(--serif); }
+#glossary dd { margin: 0; font-size: 13.5px; line-height: 1.5; }
+#glossary dd a { color: inherit; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; }
+#glossary code { font: 12px var(--mono); background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+#glossary .see { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+#glossary .see::before { content: "See: "; }
+#glossary .none { color: var(--muted); padding: 20px 0; }
+#glossary .flash { animation: gflash 1.6s ease-out; }
+@keyframes gflash { from { background: var(--lit); } to { background: transparent; } }
+body[data-mode="replica"] #glossary, body[data-mode="replica"] #glossary h2, body[data-mode="replica"] #glossary dt, body[data-mode="replica"] #glossary input { font-family: var(--mono); }
+body[data-mode="replica"] #glossary dd { font-size: 12.5px; }
+@media (max-width: 620px) { #glossary .gterm { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { #glossary .flash { animation: none; } }
+
+#math { margin-top: 10px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; font: 12.5px/1.55 var(--mono); min-height: 118px; cursor: default; }
+#math div { display: grid; grid-template-columns: 74px 1fr; gap: 10px; }
+#math b { font-weight: 500; color: var(--muted); letter-spacing: 0.04em; }
+#math em { font-style: normal; font-weight: 500; color: var(--accent); }
+body[data-mode="workbench"] #math em, body[data-mode="replica"] #math em { color: var(--now); }
+#math i { font-style: normal; color: var(--muted); }
+#math .good em { color: #2b8a3e; } #math .bad em { color: #e8590c; }
+body[data-mode="workbench"] #math .good em { color: #7ee2a0; } body[data-mode="workbench"] #math .bad em { color: #ff8a70; }
+body[data-mode="replica"] #math { border-radius: 3px; max-width: 860px; }
+body[data-mode="replica"] #math .good em, body[data-mode="replica"] #math .bad em { color: #d6ffe4; text-decoration: underline; }
+@media (max-width: 620px) { #math div { grid-template-columns: 1fr; gap: 0; margin-bottom: 4px; } }
+
 </style>
 </head>
 <body data-mode="explainer">
@@ -148,6 +187,7 @@ body[data-mode="replica"] #tourCard h3 { font: 500 14px var(--mono); text-transf
   </div>
   <nav>
   <button id="btnTour" data-tip="A three-minute guided tour. It spotlights each part of the page in turn, magnifies the small details on the scope, and drives the decoder so you can watch each idea in action. Arrow keys move between stops; Esc ends it.">Guided tour</button>
+  <button id="btnGlossary" data-tip="Plain-language definitions of every term used on this page and in the thesis — shift register, metric, threshold, R-comp, ordered list, light pen and the rest — with links between related terms and a note of where to see each one here.">Glossary</button>
   <div class="modes" role="tablist" aria-label="Mode">
     <button role="tab" data-set-mode="replica" data-tip="Replica: the facility as it was in 1965. A phosphor scope showing 16 nodes of the tree, a teletype for typed commands, numbers in octal, room for 512 branches. No buttons — type HELP. Click the words MOVE and DATA on the scope as you would touch them with the light pen.">Replica</button>
     <button role="tab" data-set-mode="workbench" data-tip="Workbench: the same decoder, display and commands, with modern conveniences — buttons and sliders, live histograms, drag to pan, scroll to zoom, hover over a branch to inspect it. Every button prints the monitor command it stands for on the teletype below.">Workbench</button>
@@ -159,10 +199,11 @@ body[data-mode="replica"] #tourCard h3 { font: 500 14px var(--mono); text-transf
 <main>
   <section class="scopewrap">
     <canvas id="scope" aria-label="Tree display: metric versus depth. Left to right is depth in the tree, one transmitted bit per step; height is the running score of how well the path fits the received signal."></canvas>
+    <div id="math" aria-live="off" data-tip="The decoder’s arithmetic for the step just taken, in the program’s own variable names. Every branch gets a metric λ from where its signal sits on the receiver’s ordered list (the IDIST table — itself 10 × [log₂(8 × probability) − 1], the formula on p. 29 of the thesis). That is added to the running total L to give the trial total LT, and the branch is accepted only if LT is at or above the threshold IT. The last line shows what happened next: threshold raised, back up, or threshold lowered."></div>
     <div class="legend only-explainer">
       <span data-tip="The decoder’s current best guess at the transmitted message, from the start of the tree to the node it is standing on (the dot). The 1965 display drew this path brighter than everything else."><i class="sw bright"></i>path being searched</span>
       <span data-tip="Branches the decoder tried earlier and abandoned, or backed out of. They stay on the display so you can see the shape of a search — short stubs hanging down are second-best guesses that failed immediately."><i class="sw dim"></i>branches already searched</span>
-      <span data-tip="Branches that do not match the message actually sent. We know this only because the simulation knows the message; the decoder has nothing but the noisy signal, and finds out the hard way — a wrong path’s score soon starts falling about three times faster than a right one climbs."><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
+      <span data-tip="Branches that do not match the message actually sent. We know this only because the simulation knows the message; the decoder has nothing but the noisy signal, and finds out the hard way — a wrong path’s score soon starts falling about twice as fast as a right one climbs."><i class="sw wrong"></i>off the true path (hidden from the decoder)</span>
       <span data-tip="The bar the running score must stay above. It ratchets up in steps of IT0 as the decoder makes progress on new ground, and is lowered one step when every available path falls below it. This one line is what makes the Fano algorithm work with almost no memory."><i class="sw thr"></i>running threshold</span>
     </div>
     <div id="caption" class="only-explainer" aria-live="polite" data-tip="A plain-language account of the step the decoder just took. The last line tells you the truth about whether it is on the right path — information the decoder does not have."></div>
@@ -712,6 +753,7 @@ class Facility {
     const c = this.cfg;
     this.channel = new Channel({ seed: c.seed, snr: c.snr, message: c.message });
     this.idist = metricTable(c.snr);
+    this.q = estimateQ({ snr: c.snr, trials: 60000 });   // Pr(sent signal is i-th on the list): shown in the worksheet
     this.dec = new FanoDecoder({ channel: this.channel, idist: this.idist, it0: c.it0 });
     this.stats = new Stats(c.ratio);
     this.store = new TreeStore(c.capacity);
@@ -979,6 +1021,12 @@ class Scope {
     c.shadowColor = T.glow || 'transparent'; c.shadowBlur = T.glow ? 6 : 0;
     this.words = [];
 
+    // vertical axis title - drawn first so it persists even while the display program is off
+    c.save(); c.translate(11, TOP + (H - TOP - BOTTOM) / 2 - 20); c.rotate(-Math.PI / 2);
+    c.textAlign = 'center'; c.fillStyle = mode === 'replica' ? T.text : T.faint;
+    c.fillText(mode === 'replica' ? 'TOTAL METRIC  L  \u2192' : 'total metric L (running score) \u2192', 0, 0);
+    c.restore();
+
     if (f.fast && f.running) {               // display program not running
       c.fillStyle = T.text; c.textAlign = 'left'; c.fillText('RUN', 12, H - 14);
       c.textAlign = 'right'; c.fillText(String(d.N), W - 12, H - 14);
@@ -989,9 +1037,13 @@ class Scope {
     // threshold lines, the running threshold brighter
     const it0 = d.IT0, half = (H - TOP - BOTTOM) / 2 * 32 / this.dx;
     c.lineWidth = 1;
+    const listTop = (this.layout ? this.layout.ty : H - 110) - 40;
+    c.textAlign = 'left';
     for (let t = Math.ceil((v.yc - half) / it0) * it0; t <= v.yc + half; t += it0) {
+      const yy = this.Y(t);
+      if (yy > TOP + 14 && yy < listTop && it0 * this.dx / 32 >= 16) { c.fillStyle = t === d.IT ? T.thrHi : T.faint; c.fillText(String(t), 24, yy - 8); }   // axis values
       if (t === d.IT) continue;
-      c.strokeStyle = T.thr; this.line(0, this.Y(t), W, this.Y(t));
+      c.strokeStyle = T.thr; this.line(0, yy, W, yy);
     }
     c.strokeStyle = T.thrHi; c.lineWidth = 1.5; this.line(0, this.Y(d.IT), W, this.Y(d.IT));
     if (mode !== 'replica') { c.fillStyle = T.thrHi; c.textAlign = 'right'; c.fillText('threshold ' + d.IT, W - 8, this.Y(d.IT) - 9); }
@@ -1126,6 +1178,7 @@ class Scope {
         ERASE: 'Remove the dots and go back to showing the ordered list for the current node.' }[this.wordAt(px, py)];
     }
     if (this.moveMode && this.starTip(px, py)) return 'Hold the pointer on a tip of the star: the tree drifts in that direction for as long as you hold. RESET returns to the decoder’s position.';
+    if (px < 22 && py > TOP && py < H - BOTTOM - 130) return 'The vertical axis: the total metric L — the running score of the path, in the program’s integer units (10 units = 1 bit of log-likelihood). The small numbers are the values of the threshold levels, IT0 apart. Depth in the tree runs left to right.';
     if (py < 23) return 'The contents of the coder’s shift register: the information bit the decoder has guessed for each branch of the current path, written above that branch. The register really holds the last 60 of them — every new channel signal depends on all 60, which is what makes a wrong turn show up sooner or later.';
     if (py < TOP) return (this.dataMode ? 'Touch a dot to show the ordered list for that node. ' : '') + 'The channel signal number (0–7' + (oct ? ', octal' : '') + ') the coder assigns to each branch of the current path: the information bit followed by two parity checks on the shift register (SEQUENCE 1 (S, I, P1, P2)). One of 8 orthogonal waveforms is sent per bit.';
     if (L && px < L.gx - 8 && py > L.ty - 26 && py < L.ty + L.rows * 15) return `The receiver’s ordered list for node ${L.at}: the 4 of its 8 matched-filter outputs that were largest, most likely first. Left column is the voltage as a 10-bit converter reading${oct ? ' (octal)' : ''}, right column the signal number. The decoder never sees more than this about each received signal (Sec. II-E). A branch scores +17 if its signal is first on the list, −13, −29 or −41 if lower, and −64 if it is not on the list at all.`;
@@ -1238,6 +1291,11 @@ const TOUR_STEPS = api => [
     enter: () => { api.cmd('STOP'); api.stepToBranch(); },
   },
   {
+    target: '#math', title: 'The arithmetic, step by step',
+    body: 'Every decision the decoder makes is three lines of arithmetic, shown here in the program’s own variable names. The branch’s <b>metric λ</b> comes from where its signal sits on the receiver’s list; it is added to the running total <b>L</b> to give the trial total <b>LT</b>; and the branch is <b>accepted only if LT ≥ IT</b>, the threshold. The last line shows what follows — threshold raised, back up, or threshold lowered. Press <b>Step</b> (or the G key after the tour) to go one decision at a time.',
+    enter: () => { api.cmd('STOP'); api.stepToBranch(); },
+  },
+  {
     region: 'all', title: 'A wrong turn',
     body: 'Now the interesting part. The decoder has just run ahead with the display off, found a place where noise sent it into trouble, rewound using saved restart data, and is replaying it slowly — exactly the procedure the thesis recommends. Watch the score sink to the threshold, the decoder back up and try second-best branches (the stubs that hang down), and finally recover. <b>Orange</b> marks branches off the true path — something only we can see. Give it fifteen seconds.',
     enter: () => api.find(),
@@ -1293,7 +1351,7 @@ const TOUR_STEPS = api => [
   },
   {
     target: 'header nav', title: 'That’s the tour',
-    body: 'Switch modes here at any time, or take the tour again. A good next step: <b>Explainer → Find a search</b>, then press <b>Step</b> and read each caption. The thesis itself is linked at the top of the page.',
+    body: 'Switch modes here at any time, or take the tour again. A good next step: <b>Explainer → Find a search</b>, then press <b>Step</b> and read each caption. Any unfamiliar word is in the <b>Glossary</b>, and the thesis itself is linked at the top of the page.',
     enter: () => { api.cmd('STOP'); api.cmd('OTHERS=0'); api.setMode('explainer'); },
   },
 ];
@@ -1418,7 +1476,118 @@ function ease(cur, want, k) {
   return o;
 }
 
+// ---- glossary.js ----
+// Glossary of key terms. In definitions, {term} links to another entry and {term|shown text}
+// links with different wording. `see` says where the thing appears on this page or in the thesis.
+
+const GLOSSARY = [
+  ['The problem', [
+    ['Channel', 'Whatever carries the signal from transmitter to receiver — a radio link, a telephone line — and adds {noise} along the way. The 1965 facility replayed tape recordings made on real channels; this page simulates one.', 'Sliders: signal-to-noise'],
+    ['Noise', 'Random disturbance added to the signal. Here it is “white Gaussian” noise — the hiss of thermal noise, equally strong at all frequencies — the standard model, and the one used for the test in the thesis (p. 28).'],
+    ['Signal-to-noise ratio', 'How far the signal stands above the {noise}, written √(2E/N₀): E is the energy of one transmitted pulse, N₀ the noise power per unit bandwidth. The thesis used 2.5. At that level the receiver’s first choice is right about 84% of the time — far too unreliable on its own, which is what the code is for.', 'Slider: Signal-to-noise'],
+    ['Coding theorem', 'Claude Shannon’s 1948 result: below a certain rate, the {channel capacity}, messages can be sent over a noisy channel with as few errors as you like. The proof shows good codes exist but gives no practical way to decode them — the gap sequential decoding was invented to close (p. 1).'],
+    ['Channel capacity', 'The highest data {rate} at which reliable communication is possible at all on a given {channel}. Set by the noise, not by the equipment.'],
+    ['Rate', 'Information bits delivered per use of the channel. Here R = 1 bit per {baud}: each transmitted signal carries one message bit, though it could have carried three — the other two are redundancy.'],
+    ['R-comp', 'The computational cutoff rate: the practical speed limit of sequential decoding, somewhat below {channel capacity}. Below R-comp the average work per bit stays small no matter how long the code; above it, the average blows up. The test in the thesis runs at about 80% of R-comp (1 bit per baud against an R-comp of 1.2, p. 30).'],
+    ['Baud', 'One use of the channel — one transmitted signal. In this example each {branch} of the tree is one baud.'],
+  ]],
+  ['The code', [
+    ['Convolutional code', 'A code in which each transmitted signal depends on the current message bit <em>and</em> a stretch of earlier ones, produced by passing the message through a {shift register} with {parity net|parity nets}. Unlike a block code it has no beginning or end: encoding, and decoding, are continuous.', 'Thesis Fig. 2'],
+    ['Shift register', 'A row of one-bit memory cells. Each new bit enters at the left and every older bit moves one place right; the oldest falls off the end. It holds the last 60 message bits, so each transmitted signal depends on 60 bits of history — which is why one wrong guess by the decoder spoils its predictions for the next 60 steps and gets found out.', 'Top row of digits on the scope'],
+    ['Constraint length', 'The length of the {shift register}: 60 bits here (<code>CONSTRAINT IS 60</code>). The chance of an undetected decoding error falls exponentially as it grows, and — the attraction of sequential decoding — the decoding work does not grow with it.'],
+    ['Parity net', 'A set of connections from chosen cells of the {shift register} to a modulo-2 adder, whose output is 1 if an odd number of those cells hold a 1. Two nets, P1 and P2, give two check bits per message bit. The octal constants in the program (<code>P1 = 7360 3601 …</code>) are their wiring lists.', 'Thesis Fig. A-1, p. 44'],
+    ['Channel signal', 'One of 8 waveforms, numbered 0–7. The number is three bits: the message bit followed by the two {parity net} outputs (<code>SEQUENCE 1 (S, I, P1, P2)</code>).', 'Second row of digits on the scope'],
+    ['Orthogonal signals', 'Waveforms chosen so that a filter matched to one gives no response to any other — for example, tones at different frequencies. With 8 of them the receiver gets 8 separate, independently noisy readings per {baud}.'],
+    ['Matched filter', 'The best possible detector for a known waveform in noise. The receiver has one per signal; after each {baud} every filter puts out a voltage saying how strongly its signal seems to have been present (p. 12).'],
+    ['Ordered list', 'What the decoder is told about each {baud}: the 4 largest of the 8 {matched filter} voltages, in order, and which signals they belong to. Niessen’s compromise between a “hard decision” (keep only the winner) and a “soft decision” (keep everything) — most of the benefit for a fraction of the storage (Sec. II-E).', 'Lower left of the scope'],
+    ['GEN table', 'The two {channel signal|signals} the coder would produce from the current node: one if the next message bit is 0, one if it is 1. The decoder looks both up on the {ordered list}.', 'Lower left of the scope, beside the list'],
+    ['Hypothesis', 'One candidate for what was sent on the next {branch}. A binary tree has two per node. <code>OTHERS=1</code> draws both.'],
+  ]],
+  ['The algorithm', [
+    ['Tree', 'Every possible message, laid out as forks: at each {node} the next bit is 0 or 1. N bits make 2ᴺ paths, far too many to check one by one — hence a search.', 'Thesis Fig. 1'],
+    ['Node', 'A point in the {tree} reached after some number of bits. Its depth, N, is that number.', 'Bottom-right number on the scope'],
+    ['Branch', 'One step in the {tree} — one guessed message bit and the {channel signal} it implies. Drawn as a line segment whose slope is its {metric} increment.'],
+    ['Path', 'A sequence of branches from the origin: one candidate message. The bright path on the display is the decoder’s current guess.'],
+    ['Sequential decoding', 'Decoding by exploring the {tree} one {branch} at a time, steered by a running score, rather than comparing all possible messages. Invented by J. M. Wozencraft at MIT in 1957; Niessen was his student.'],
+    ['Fano algorithm', 'R. M. Fano’s 1963 form of {sequential decoding}, and the one implemented here. It moves forward on the best-looking {branch} while the {metric} stays above a {threshold}, backs up to try alternatives when it does not, and lowers the threshold when nothing works. It remembers almost nothing, at the cost of sometimes re-tracing its steps.', 'Thesis Fig. 3; the program listing in Explainer mode'],
+    ['Metric', 'The running score of a {path}: for each branch, the log-likelihood of what was received given the signal guessed, minus a bias equal to the {rate}. The bias is the clever part — it makes the score climb along the correct path (about +10 per node here) and sink along a wrong one (about −23, even taking the better of the two branches each time), so paths of different lengths can be compared. In the program: L (total), LMBD(N) (one branch), IDIST (the table 17, −13, −29, −41, −64, by position on the {ordered list}).', 'Height on the scope; thesis Eq. (3) and p. 29'],
+    ['Threshold', 'The level the {metric} must stay at or above for a branch to be accepted (IT in the program). Raised as far as possible whenever the decoder reaches a node it has never visited; lowered one {threshold increment|step} when every available path falls below it.', 'The highlighted horizontal line'],
+    ['Threshold increment', 'IT0: the spacing of the allowed {threshold} levels, and the algorithm’s one tuning knob. Too small and every dip triggers a shallow {search}; too large and the decoder goes far down wrong paths before noticing. The thesis tried 20, 50 and 100 and found 50 best (Fig. 6).', 'Slider: Threshold increment IT0'],
+    ['FLAG', 'One bit of state that stops the algorithm from looping. Set when a branch fails; while set, the {threshold} may not be raised, because the decoder is on ground it has covered before. Cleared at the first genuinely new node (pp. 6, 54).', 'Readouts'],
+    ['Search', 'What happens when the decoder cannot advance: it backs up and tries other branches. By the thesis’ definition a search begins at a failure to advance and ends when the decoder first gets beyond the node where it began (p. 48).', 'Button: Find a search'],
+    ['Wrong turn', 'An advance along a branch that is not the true message, because noise made it look better. The decoder cannot tell at the time; the {shift register} ensures the {metric} collapses soon after, which sets off a {search} that undoes it.', 'Orange branches in Explainer mode'],
+    ['Computation', 'One evaluation of a {branch} — one pass through statement 1 of the program. “Computations per node” is the cost of decoding one bit; it averages about 2 here.', 'Readouts'],
+  ]],
+  ['What the facility measured', [
+    ['Search depth', 'How many nodes a {search} backs up from where it started. Its distribution is Fig. 6 of the thesis.', 'Upper chart'],
+    ['Waiting line', 'Received {baud|bauds} queued while the decoder is busy searching. The thesis models a decoder 20 times faster than the channel (<code>COMPUTE WAITING LINE 20</code>): the line grows during long searches and drains afterwards.', 'Lower chart'],
+    ['Buffer overflow', 'The failure that matters in practice. A real decoder stores the {waiting line} in a finite memory; if a {search} runs long enough to fill it, incoming data is lost and communication breaks down (p. 7). How often that happens depends on the tail of the search distribution — see {power law}.'],
+    ['Power law', 'The number of searches deeper than N falls off as N to a negative power — a straight line on log–log axes — rather than exponentially. So very long searches are rare but never negligible. Predicted by J. E. Savage; Niessen’s measurements supported it (p. 34), and it was later proved to be inherent in sequential decoding.', 'The straight tail of the upper chart'],
+    ['Bit error', 'A decoded bit that differs from the one sent. With a {constraint length} of 60 these essentially never occur; the practical limit is {buffer overflow}, not errors.', 'Readouts'],
+  ]],
+  ['The 1965 machine', [
+    ['PDP-6', 'Digital Equipment Corporation’s 36-bit computer; the one at MIT’s {Project MAC}, installed October 1964, had 16,000 words of memory. Chosen because it was run hands-on by its programmer rather than in batches, had a good display, and came with a Fortran compiler that could be extended (pp. 11, 26).'],
+    ['Project MAC', 'MIT’s pioneering computing laboratory, founded 1963 — the forerunner of today’s CSAIL. R. M. Fano was its first director, and made the PDP-6 available for this work.'],
+    ['Scope', 'The PDP-6’s cathode-ray display, which drew points, characters and line segments under program control. Its picture had to be redrawn about 30 times a second to avoid flicker, which drove the design of the {tree store}.', 'Replica mode'],
+    ['Light pen', 'A pen-shaped photocell held against the {scope}; the computer knew what it was pointing at by when it saw the beam. Used to move the picture, pick a node, and brighten a path — the mouse of its day.', 'Replica mode: the words MOVE and DATA'],
+    ['Teletype', 'The printing keyboard terminal through which the operator typed {monitor} commands and the system printed its replies.', 'The strip at the bottom of the page'],
+    ['Monitor', 'Niessen’s control program. It runs the user’s algorithm between display checkpoints, fetches data automatically, keeps {restart data}, collects statistics, and obeys commands such as <code>RUN</code>, <code>STEPS=</code>, <code>SPEED=</code>, <code>GO TO N=</code> (Table A-2, p. 61).'],
+    ['Special language', 'Fortran II extended with some 48 statements for describing decoders — <code>GENERATE</code>, <code>SHIFT LEFT</code>, <code>ENTER BRANCH</code>, <code>BACKUP DEPTH IS 256 NODES</code> — so that communications students, not programmers, could write new algorithms. Added by extending the syntax table of DEC’s syntax-directed compiler (Sec. IV, Appendix D).', 'The program listing in Explainer mode'],
+    ['Restart data', 'A saved copy of the decoder’s complete state, written every so many nodes, so that an interesting stretch can be run again and watched closely (<code>RESTART AT N=</code>, <code>REPEAT</code>). About ten restart points were kept (p. 49).', 'Button: Rewind'],
+    ['Tree store', 'The “cross-threaded” list structure that remembers searched branches for the display: a loop of branches at each depth, each with a pointer back to its parent. It held 512 branches — about ten screen-widths — discarding the oldest first (Appendix C).', 'Readouts: Branches stored'],
+    ['DEC-Tape', 'The PDP-6’s small magnetic tape, holding 73,800 words — enough for about 37,000 nodes of data with a list of 4. The facility’s main bottleneck (p. 16).'],
+    ['Octal', 'Base-8 notation, natural for a 36-bit machine (12 octal digits per word). The original display showed signal numbers and voltages in octal; Replica mode does too.'],
+    ['DDT', 'The PDP-6’s debugger, reachable from the {monitor}, used to examine and change values in a running program. Here <code>DDT IT0=20</code> and similar commands change parameters.'],
+    ['MODE0 and SPEED=7', 'Two ways to run fast. <code>SPEED=7</code> stops drawing but goes on remembering the tree; <code>MODE0</code> switches the display program off entirely — fastest, for collecting statistics (p. 62).', 'Checkbox: Display on'],
+  ]],
+];
+
+const slug = t => 'g-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+function initGlossary(button) {
+  const dlg = document.createElement('dialog');
+  dlg.id = 'glossary';
+  const link = (m, term, text) => `<a href="#${slug(term)}">${text || term}</a>`;
+  dlg.innerHTML = '<div class="ghead"><h2>Glossary</h2><input type="search" placeholder="Search terms…" aria-label="Search the glossary"><button class="x" aria-label="Close">×</button></div><div class="gbody">'
+    + GLOSSARY.map(([group, terms]) => `<section><h3>${group}</h3><dl>` + terms.map(([term, def, see]) =>
+      `<div class="gterm" id="${slug(term)}"><dt>${term}</dt><dd>${def.replace(/\{([^}|]+)(?:\|([^}]+))?\}/g, link)}${see ? `<span class="see">${see}</span>` : ''}</dd></div>`).join('') + '</dl></section>').join('')
+    + '<p class="none" hidden>No matching terms.</p></div>';
+  document.body.appendChild(dlg);
+
+  const input = dlg.querySelector('input'), body = dlg.querySelector('.gbody');
+  const filter = () => {
+    const q = input.value.trim().toLowerCase();
+    let any = false;
+    dlg.querySelectorAll('section').forEach(sec => {
+      let shown = 0;
+      sec.querySelectorAll('.gterm').forEach(t => { const hit = !q || t.textContent.toLowerCase().includes(q); t.hidden = !hit; if (hit) shown++; });
+      sec.hidden = !shown; any = any || shown > 0;
+    });
+    dlg.querySelector('.none').hidden = any;
+  };
+  const show = id => {
+    if (!dlg.open) dlg.showModal();
+    const el = id && dlg.querySelector('#' + CSS.escape(id));
+    if (!el) return;
+    input.value = ''; filter();
+    el.scrollIntoView({ block: 'start' });
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  };
+  input.addEventListener('input', filter);
+  dlg.querySelector('.x').onclick = () => dlg.close();
+  dlg.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#g-"]');
+    if (a) { e.preventDefault(); show(a.getAttribute('href').slice(1)); }
+    else if (e.target === dlg) dlg.close();                 // click on the backdrop
+  });
+  dlg.addEventListener('close', () => { body.scrollTop = 0; input.value = ''; filter(); button.focus(); });
+  button.onclick = () => { show(); input.focus(); };
+  if (/^#g-/.test(location.hash)) show(location.hash.slice(1));
+  return { show };
+}
+
 // ---- app.js ----
+
 
 
 
@@ -1539,6 +1708,7 @@ const tour = new Tour({
   onEnd() { try { localStorage.setItem('scd-toured', '1'); } catch (e) { /* ignore */ } $('btnTour').classList.remove('nudge'); $('btnTour').focus(); },
 });
 $('btnTour').onclick = () => { hideTip(); tour.start(); };
+initGlossary($('btnGlossary'));
 try { if (!localStorage.getItem('scd-toured')) $('btnTour').classList.add('nudge'); } catch (e) { $('btnTour').classList.add('nudge'); }
 document.querySelectorAll('[data-set-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.setMode); });
 
@@ -1548,7 +1718,7 @@ cmd.addEventListener('keydown', e => {
 document.addEventListener('keydown', e => {
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
   if (mode === 'replica') { if (!typing && e.key.length === 1) cmd.focus(); return; }
-  if (typing || tour.active) return;
+  if (typing || tour.active || document.querySelector('dialog[open]')) return;
   if (e.key === ' ') { e.preventDefault(); submit(f.running ? 'STOP' : 'RUN'); }
   if (e.key === 'g' || e.key === 'G') submit('G');
 });
@@ -1605,6 +1775,45 @@ function narrate() {
     div.classList.toggle('on', pcs.some(p => on.has(p)));
     div.classList.toggle('now', pcs.includes(last));
   }
+}
+
+// ---- the worksheet: how accept / fail is being calculated, step by step ----------------------
+const ORD = ['', '1st', '2nd'], sgn = n => (n >= 0 ? '+ ' : '\u2212 ') + Math.abs(n), neg = n => String(n).replace('-', '\u2212');
+let mathBranch = null, mathEvent;
+function worksheet() {
+  const ev = f.lastEvent, el = $('math'), d = f.dec;
+  if (f.fast && f.running) { if (mathEvent !== 'fast') { mathEvent = 'fast'; el.innerHTML = '<div><b>DISPLAY OFF</b><span>running at full speed — STOP or a slower SPEED shows the arithmetic again</span></div>'; } return; }
+  if (ev === mathEvent) return;
+  mathEvent = ev;
+  if (!ev) { mathBranch = null; el.innerHTML = '<div><b>WORKSHEET</b><span>the arithmetic behind each accept / fail decision appears here as the decoder runs</span></div>'; return; }
+  const row = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><b>${k}</b><span>${v}</span></div>`;
+  if (ev.kind === 'enter') {
+    const t = f.tentative, g = d.coder.gen, l = f.channel.listLen, q = f.q[t.pos - 1];
+    const formula = t.pos <= l ? `10 × [log₂(8 × ${q.toFixed(3)}) − 1]` : `10 × [log₂(8 × ${q.toFixed(3)} ÷ ${8 - l}) − 1]`;
+    mathBranch = row('BRANCH', `node N = ${ev.N}: try the ${ORD[t.li]} choice, bit J = ${t.bit} → signal GEN(${t.bit}) = ${t.sym} <i>(GEN: 0 → ${g[0]}, 1 → ${g[1]})</i>`)
+      + row('METRIC', `signal ${t.sym} is ${t.pos <= l ? `no. ${t.pos} on` : 'not on'} the receiver’s list → λ = IDIST(${t.pos}) = <em>${neg(t.dy)}</em> <i>≈ ${formula}, where ${q.toFixed(3)} = chance the true signal lands there</i>`)
+      + row('TOTAL', `LT = L + λ = ${neg(ev.L)} ${sgn(t.dy)} = <em>${neg(ev.LT)}</em>`)
+      + row('TEST', `LT ≥ IT ?  ${neg(ev.LT)} ${t.fail ? '&lt;' : '≥'} ${neg(ev.IT)} → <em>${t.fail ? 'FAIL' : 'ACCEPT'}</em>`, t.fail ? 'bad' : 'good');
+    el.innerHTML = mathBranch + row('THEN', '…');
+    return;
+  }
+  let then;
+  if (ev.kind === 'advance') {
+    const raised = ev.boxes.filter(b => b === 6).length * d.IT0;
+    then = `N ← ${ev.N}, L ← ${neg(ev.L)}.  Threshold: ` + (raised
+      ? `raise while IT + IT0 ≤ LT:  ${neg(ev.IT - raised)} → <em>${neg(ev.IT)}</em> <i>(${neg(ev.IT)} + ${d.IT0} &gt; ${neg(ev.L)}, so it stops there)</i>`
+      : ev.FLAG ? `held at ${neg(ev.IT)} <i>— FLAG = 1: re-tracing old ground, no raising until a new node is reached</i>`
+        : `stays ${neg(ev.IT)} <i>(${neg(ev.IT)} + ${d.IT0} &gt; ${neg(ev.L)}: no room to raise it)</i>`);
+  } else if (ev.kind === 'retreat') {
+    const lam = d.LMBD[ev.N & 255];
+    then = `look back: LB = L − λ(N−1) = ${neg(ev.L + lam)} ${sgn(-lam)} = ${neg(ev.L)};  LB ≥ IT ?  ${neg(ev.L)} ≥ ${neg(ev.IT)} → <em>back up to node ${ev.N}</em>`
+      + (d.LI[ev.N & 255] === 2 ? ' <i>— both branches here already tried: keep looking back</i>' : ' <i>— try its 2nd choice next</i>');
+  } else {
+    const old = ev.IT + d.IT0;
+    then = (ev.boxes.includes(14) ? `look back: LB = ${neg(ev.L)} ${sgn(-d.LMBD[(ev.N - 1) & 255])} = ${neg(ev.L - d.LMBD[(ev.N - 1) & 255])} &lt; IT = ${neg(old)}, so no retreat is possible` : 'at the origin: nowhere to back up to')
+      + ` → lower threshold: IT ← IT − IT0 = ${neg(old)} − ${d.IT0} = <em>${neg(ev.IT)}</em>`;
+  }
+  el.innerHTML = (mathBranch || '') + row('THEN', then);
 }
 
 // ---- readouts and histograms ----------------------------------------------------------------
@@ -1711,6 +1920,7 @@ function frame(ts) {
   if (f.running !== wasRunning) { wasRunning = f.running; sync(); }
   scope.track(f, f.speed >= 5);
   scope.draw(f, mode);
+  worksheet();
   if (mode === 'explainer') narrate();
   tour.frame();
   if (ts - lastSlow > 200 && mode !== 'replica') { lastSlow = ts; readouts(); drawCharts(); }

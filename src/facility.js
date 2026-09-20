@@ -1,5 +1,5 @@
 import { Channel } from './channel.js';
-import { metricTable } from './metric.js';
+import { metricTable, estimateQ } from './metric.js';
 import { FanoDecoder } from './fano.js';
 import { Stats } from './stats.js';
 import { TreeStore } from './treeStore.js';
@@ -39,6 +39,7 @@ export class Facility {
     const c = this.cfg;
     this.channel = new Channel({ seed: c.seed, snr: c.snr, message: c.message });
     this.idist = metricTable(c.snr);
+    this.q = estimateQ({ snr: c.snr, trials: 60000 });   // Pr(sent signal is i-th on the list): shown in the worksheet
     this.dec = new FanoDecoder({ channel: this.channel, idist: this.idist, it0: c.it0 });
     this.stats = new Stats(c.ratio);
     this.store = new TreeStore(c.capacity);
